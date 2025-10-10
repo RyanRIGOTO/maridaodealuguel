@@ -40,4 +40,5 @@ class UsuarioController extends Controller
     {
         // Remove usuário
     }
+
 }
