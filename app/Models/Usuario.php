@@ -1,6 +1,4 @@
 <?php
-// ...existing code...
-<?php
 
 namespace App\Models;
 
