@@ -14,5 +14,15 @@
         @endforeach
     </ul>
 </div>
+
+<form action="{{ route('excluir.piscina', $piscina->id) }}" method="POST">
+            @csrf
+            @method('DELETE')
+
+            <button type="submit">
+                Excluir
+            </button>
+        </form>
+        
 </body>
 </html>
