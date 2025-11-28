@@ -8,6 +8,24 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('ola-mundo/', function(){
+    $usuario = Usuario::all();
+    return view('Usuario.index')->with('Usuario',$usuario);
+})->name('index.Usuario');
+
+Route::get('show/{id}/', function(Request $request){
+    $usuario = usuario::find($request->id);
+    return view('Usuario.show')->with('Usuario',$usuario);
+});
+
+Route::get('create', function(){
+    return view('usuario.create');
+})->name('nova.usuario');
+
+Route::post('store', [UsuarioController::class, 'store'])->name('cria.usuario');
+
+Route::delete('delete/{id}', [UsuarioController::class, 'destroy', 'id'])->name('excluir.usuario');
+
 Route::get('/teste', function () {
     $usuario = new \App\Models\Usuario();
     $usuario->nome = 'Teste';
