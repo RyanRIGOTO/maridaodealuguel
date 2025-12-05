@@ -15,7 +15,7 @@
     </ul>
 </div>
  
-<form action="{{ route('excluir.piscina', $piscina->id) }}" method="POST">
+<form action="{{ route('excluir.usuario', $usuario->id) }}" method="POST">
             @csrf
             @method('DELETE')
 

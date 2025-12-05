@@ -24,6 +24,17 @@ Route::get('create', function(){
 
 Route::post('store', [UsuarioController::class, 'store'])->name('cria.usuario');
 
+Route::get('edit/{id}', function(Request $request, $id){
+    $usuario = usuario::find($request->id);
+    return view('usuario.edit')->with('usuario',$usuario);
+})->name('editar.usuario');
+
+
+
+Route::post('update/{id}', function(Request $request, $id){
+    [UsuarioController::class, 'update', 'id'];
+})->name('usuario.update');
+
 Route::delete('delete/{id}', [UsuarioController::class, 'destroy', 'id'])->name('excluir.usuario');
 
 Route::get('/teste', function () {

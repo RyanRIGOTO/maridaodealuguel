@@ -22,7 +22,7 @@ class UsuarioController extends Controller
     public function store(Request $request)
     {
         // Salva novo usuário
-        Usuarios::create([
+        Usuario::create([
             'nome' => $request->nome,
             'cpf' => $request->cpf,
             'telefone' =>$request->telefone,
@@ -35,32 +35,44 @@ class UsuarioController extends Controller
 
     public function show($id)
     {
-        $usuarios = Usuarios::find($id);
+        $usuarios = Usuario::find($id);
 
         return view('usuarios/show')->with('usuarios', $usuarios);
     }
 
-    public function edit($id)
-    {
-        // Mostra formulário de edição
-    }
-
     public function update(Request $request, $id)
     {
-        Usuarios::create([
-            'nome' => $request->nome,
-            'telefone' =>$request->telefone,
-            'endereco' => $request->endereco
-         ]);
+        $usuarios = Usuario::findOrFail($id);
+
+        $usuarios->nome = $request->nome;
+        $usuarios->cpf = $request->cpf;
+        $usuarios->telefone = $request->telefone;
+        $usuarios->endereco = $request->endereco;
+        $usuarios->email = $request->email;
 
          return redirect()->route('index.usuario');
     }
 
     public function destroy($id)
     {
-        $usuarios = Usuarios::findOrFail($id);
+        $usuarios = Usuario::findOrFail($id);
 
         $usuarios->delete();
         return redirect()->route('index.usuario');
     }
+
+    public function delete($id)
+    {
+        $usuario = Usuario::findOrFail($id);
+        $usuario->delete();
+        return redirect()->route('index.usuario');
+    }
+    
+    public function editar($id)
+    {
+        $usuario = Usuario::findOrFail($id);
+        return view('usuario.update')
+        ->with(['usuario' => $usuario]);
+    }
+
 }
