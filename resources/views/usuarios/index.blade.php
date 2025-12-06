@@ -6,6 +6,26 @@
     <title>Document</title>
 </head>
 <body>
+
+
+  <ul>
+        @foreach ($usuario as $u)
+            <a href="{{ route('usuario.show', $usuario->id) }}">
+            <button> {{$usuario->nome }} </button>
+        </a> 
+        @endforeach
+   </ul>
+
+
+
+
+
+
+
+
+
+
+
     <div>
     <h1>Lista de Usuarios</h1>
     <ul>
