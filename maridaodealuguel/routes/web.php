@@ -1,9 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ClientePrestadorController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 
-Route::resource('usuarios', 'App\Http\Controllers\UsuarioController');  
+//Route::resource('clientes-prestadores', 'App\Http\Controllers\ClientePrestadorController');  
+
+Route::resource('clientes-prestadores', ClientePrestadorController::class);

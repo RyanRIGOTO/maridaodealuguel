@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Models\ClientePrestador;
 use Illuminate\Http\Request;
 
@@ -11,9 +12,10 @@ class ClientePrestadorController
      * Display a listing of the resource.
      */
     public function index()
-    {
-        //
-    }
+{
+    $clientesPrestadores = \App\Models\ClientePrestador::all();
+    return response()->json($clientesPrestadores);
+}
 
     /**
      * Show the form for creating a new resource.
