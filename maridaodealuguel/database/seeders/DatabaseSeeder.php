@@ -15,7 +15,6 @@ class DatabaseSeeder extends Seeder
         // Cria 5 clientes/prestadores de teste
         ClientePrestador::factory(5)->create();
 
-        // Ou cria um específico (descomente se quiser)
         
         ClientePrestador::create([
             'name' => 'Ryan Rigoto',
