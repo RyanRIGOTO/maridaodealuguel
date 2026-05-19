@@ -14,6 +14,12 @@ Route::get('/novo', function () {
     return view('novo');
 })->name('novo');
 
+Route::get("users/{id}", [ClienteController::class, 'show'])->name('users.show');
+
+Route::get('/users/show', function () {
+    return view('users.show');
+});
+
 Route::resource('clientes', ClienteController::class);
 
 // Route::resource('users', UserController::class);
