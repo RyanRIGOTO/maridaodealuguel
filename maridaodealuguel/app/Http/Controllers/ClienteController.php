@@ -38,12 +38,18 @@ class ClienteController extends Controller
             'password'        => 'required|string|min:6',
         ]);
 
+        // Cliente::create([
+        //     'name'            => $request->name,
+        //     'email'           => $request->email,
+        //     'telefone'        => $request->telefone,
+        //     'data_nascimento' => $request->data_nascimento,
+        //     'password'        => bcrypt($request->password),
+        // ]);
+
         Cliente::create([
-            'name'            => $request->name,
-            'email'           => $request->email,
-            'telefone'        => $request->telefone,
-            'data_nascimento' => $request->data_nascimento,
-            'password'        => bcrypt($request->password),
+        'name' => 'Teste',
+        'email' => 'teste@email.com',
+        'password' => bcrypt('123456')
         ]);
 
         return redirect()->route('users.index')
@@ -53,11 +59,18 @@ class ClienteController extends Controller
     /**
      * Display the specified resource.  ← GET /users/{id}
      */
-    public function show(string $id)
-    {
-        $user = Cliente::findOrFail($id);
-        return view('users.show', compact('user'));
-    }
+    // public function show(string $id)
+    // {
+    //     $user = Cliente::findOrFail($id);
+    //     return view('users.show', compact('user'));
+    // }
+
+    public function show($id)
+{
+    $user = Cliente::findOrFail($id);
+
+    return view('users.show', compact('user'));
+}
 
     /**
      * Show the form for editing the specified resource.

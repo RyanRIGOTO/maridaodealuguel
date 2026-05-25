@@ -25,4 +25,7 @@ class Agendamento extends Model
         }
         return null; // Retorna null se não houver servico_id
     }
+    
+
+
 }
