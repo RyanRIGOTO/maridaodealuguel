@@ -47,7 +47,7 @@ class ClienteController extends Controller
         // ]);
 
         Cliente::create([
-        'name' => 'Teste',
+        
         'email' => 'teste@email.com',
         'password' => bcrypt('123456')
         ]);

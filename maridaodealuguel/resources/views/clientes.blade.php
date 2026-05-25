@@ -3,7 +3,7 @@
     <h1>Lista de Clientes</h1>
     <ul>
         @foreach($clientes as $cliente)
-            <li>{{ $cliente->nome }}</li>
+            <li>{{ $cliente->name }}</li>
         @endforeach
     </ul>
 @endsection
