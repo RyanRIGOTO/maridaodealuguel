@@ -1,0 +1,17 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: db_maridao_aluguel
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: maridaodealuguel
+      MYSQL_USER: development
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_maridao_data:/var/lib/mysql
+
+volumes:
+  db_maridao_data:

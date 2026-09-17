@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* Paleta Laranja Oficial */
+    --o-50: #FFF4EC;
+    --o-100: #FFE3CC;
+    --o-300: #FF9F5E;
+    --o-500: #F2600C; /* Primária */
+    --o-600: #D2500A;
+    --o-800: #7D2F07;
+
+    /* Paleta Neutra Quente (Ink) */
+    --ink-50: #FAF9F7;
+    --ink-100: #F0EEEA;
+    --ink-300: #C7C1B7;
+    --ink-600: #5C554C;
+    --ink-800: #332E27;
+    --ink-900: #231F1A;
+}
+
+@layer base {
+    body {
+        @apply bg-ink-50 text-ink-900 antialiased;
+        font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        @apply text-ink-900 font-semibold tracking-tight;
+    }
+}
+
+@layer components {
+    /* ---- Botões Padronizados ---- */
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-medium text-sm px-4 py-2.5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:ring-offset-2 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+    
+    .btn-secondary {
+        @apply inline-flex items-center justify-center gap-2 bg-transparent hover:bg-ink-100 active:bg-ink-200 text-ink-800 font-medium text-sm px-4 py-2.5 rounded-lg border border-ink-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all duration-150;
+    }
+
+    .btn-danger {
+        @apply inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-medium text-sm px-4 py-2.5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:ring-offset-2 transition-all duration-150;
+    }
+
+    .btn-success {
+        @apply inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium text-sm px-4 py-2.5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:ring-offset-2 transition-all duration-150;
+    }
+
+    .btn-ghost {
+        @apply inline-flex items-center justify-center gap-2 text-ink-600 hover:text-ink-900 hover:bg-ink-100 font-medium text-sm px-3 py-2 rounded-lg transition-all duration-150;
+    }
+
+    .btn-sm {
+        @apply text-xs px-3 py-1.5 rounded-md;
+    }
+
+    /* ---- Formulários & Inputs ---- */
+    .form-input {
+        @apply w-full rounded-lg border border-ink-300 bg-white px-3.5 py-2.5 text-ink-900 placeholder-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all duration-150;
+    }
+
+    .form-select {
+        @apply form-input pr-10 appearance-none bg-no-repeat bg-[right_0.75rem_center] bg-[length:1em_1em];
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%235C554C' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    }
+
+    .form-label {
+        @apply block text-sm font-medium text-ink-800 mb-1.5;
+    }
+
+    .form-error {
+        @apply text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-medium;
+    }
+
+    .form-hint {
+        @apply text-xs text-ink-600 mt-1.5;
+    }
+
+    /* ---- Cartões e Superfícies ---- */
+    .card {
+        @apply bg-white rounded-xl border border-ink-300 shadow-[0_1px_3px_rgba(0,0,0,0.03)];
+    }
+
+    .stat-card {
+        @apply card p-4 flex flex-col justify-between gap-2 hover:border-brand-300 transition-colors duration-150;
+    }
+
+    /* ---- Badges de Status (Conforme Identidade Visual) ---- */
+    .badge {
+        @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium tracking-wide;
+    }
+    .badge-pendente {
+        @apply badge bg-[#FAEEDA] text-[#633806];
+    }
+    .badge-confirmado {
+        @apply badge bg-[#E1F5EE] text-[#085041];
+    }
+    .badge-concluido {
+        @apply badge bg-[#EAF3DE] text-[#27500A];
+    }
+    .badge-cancelado {
+        @apply badge bg-[#FCEBEB] text-[#791F1F];
+    }
+    .badge-ativo {
+        @apply badge bg-[#EAF3DE] text-[#27500A];
+    }
+    .badge-inativo {
+        @apply badge bg-[#F0EEEA] text-[#5C554C];
+    }
+    .badge-pago {
+        @apply badge bg-[#E1F5EE] text-[#085041];
+    }
+
+    /* ---- Navegação Lateral (Dashboard Sidebar) ---- */
+    .sidebar-link {
+        @apply flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-ink-600 hover:bg-brand-50 hover:text-brand-600 transition-all duration-150;
+    }
+    .sidebar-link.active {
+        @apply bg-brand-500 text-white font-semibold shadow-sm hover:bg-brand-600 hover:text-white;
+    }
+    .sidebar-link.active i {
+        @apply text-white;
+    }
+
+    /* ---- Tabelas ---- */
+    .table-app {
+        @apply w-full text-sm text-left border-collapse;
+    }
+    .table-app thead {
+        @apply bg-ink-100 text-ink-600 uppercase text-xs tracking-wider border-b border-ink-300;
+    }
+    .table-app th {
+        @apply px-4 py-3 font-semibold;
+    }
+    .table-app td {
+        @apply px-4 py-3.5 border-t border-ink-100 text-ink-800;
+    }
+    .table-app tbody tr:hover {
+        @apply bg-ink-50/60;
+    }
+
+    /* ---- Wizard de Agendamento ---- */
+    .wizard-step-dot {
+        @apply flex items-center justify-center w-9 h-9 rounded-full border-2 font-semibold text-sm shrink-0 transition-colors duration-150;
+    }
+}
+
+/* Alpine.js: esconde elementos até o componente inicializar */
+[x-cloak] {
+    display: none !important;
+}
+
+/* Área imprimível (Relatórios) */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .print-area {
+        box-shadow: none !important;
+        border: none !important;
+    }
+    body {
+        background: white !important;
+    }
+}
+
+/* Barra de Rolagem Customizada */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    @apply bg-ink-100;
+}
+::-webkit-scrollbar-thumb {
+    @apply bg-ink-300 rounded-full hover:bg-ink-400;
+}
+
