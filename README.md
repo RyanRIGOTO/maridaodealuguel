@@ -4,7 +4,7 @@ Projeto Integrador - Tecnologia em Análise e Desenvolvimento de Sistemas
 IFPR Campus Umuarama
 
 Front-end em **Blade + Tailwind CSS** (com **Alpine.js** para interações
-simples, via CDN), consumindo os *Services* e *Models* do próprio Laravel —
+simples, via CDN), consumindo os *Services* e *Models* do próprio Laravel -
 sem API/JS framework separado. Todo o HTML é renderizado no servidor.
 
 ## Telas implementadas
@@ -92,7 +92,7 @@ acima criam um banco novo para avaliação, sem dados pessoais do ambiente local
   agendamento (4 fases), nas notas por estrela, no menu mobile e nos
   formulários de edição inline (categorias/serviços).
 - Os relatórios (`/admin/relatorios/...`) têm um botão **Imprimir / PDF**
-  que usa `window.print()` — o layout já esconde o menu lateral e os
+  que usa `window.print()` - o layout já esconde o menu lateral e os
   botões ao imprimir (`@media print`).
 - A API REST original (`routes/api.php`) continua funcionando normalmente;
   o Blade é só uma segunda forma de acessar o mesmo sistema.
