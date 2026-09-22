@@ -1,6 +1,6 @@
-# 🔧 Maridão de Aluguel — Marketplace de Serviços
+# 🔧 Maridão de Aluguel - Marketplace de Serviços
 
-Projeto Integrador — Tecnologia em Análise e Desenvolvimento de Sistemas
+Projeto Integrador - Tecnologia em Análise e Desenvolvimento de Sistemas
 IFPR Campus Umuarama
 
 Front-end em **Blade + Tailwind CSS** (com **Alpine.js** para interações
