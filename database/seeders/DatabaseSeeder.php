@@ -77,7 +77,7 @@ class DatabaseSeeder extends Seeder
         foreach ($prestadoresData as $data) {
             $user = User::create([
                 'name' => $data['name'], 'email' => $data['email'], 'phone' => $data['phone'],
-                'password' => Hash::make('password123'), 'role' => 'prestador', 'status' => 'ativo',
+                'password' => Hash::make('senha123'), 'role' => 'prestador', 'status' => 'ativo',
                 'cpf_cnpj' => $data['cpf_cnpj'], 'termos_lgpd' => true, 'email_verified_at' => now(),
             ]);
             $user->prestadorProfile()->create([
@@ -128,7 +128,7 @@ class DatabaseSeeder extends Seeder
         foreach ($clientesData as $data) {
             $user = User::create([
                 'name' => $data['name'], 'email' => $data['email'], 'phone' => $data['phone'],
-                'password' => Hash::make('password123'), 'role' => 'cliente', 'status' => 'ativo',
+                'password' => Hash::make('senha123'), 'role' => 'cliente', 'status' => 'ativo',
                 'cpf_cnpj' => $data['cpf_cnpj'], 'termos_lgpd' => true, 'email_verified_at' => now(),
             ]);
             $user->clienteProfile()->create([
