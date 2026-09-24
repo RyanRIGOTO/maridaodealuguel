@@ -79,8 +79,8 @@ acima criam um banco novo para avaliação, sem dados pessoais do ambiente local
 | Papel | E-mail | Senha |
 |---|---|---|
 | Admin | admin@maridaodealuguel.com.br | senha123 |
-| Prestador | joao.silva@email.com | password123 |
-| Cliente | ana.costa@email.com | password123 |
+| Prestador | joao.silva@email.com | senha123 |
+| Cliente | ana.costa@email.com | senha123 |
 
 ## Observações de implementação
 
