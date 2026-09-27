@@ -61,27 +61,7 @@ class ClienteController extends Controller
             ->filter(fn ($categoria) => $categoria->servicos->isNotEmpty())
             ->values();
 
-        // Estrutura enxuta (sem dados sensíveis do prestador) para alimentar o
-        // assistente de 4 fases no front-end (Alpine.js), evitando expor
-        // e-mail/telefone/CPF do prestador no HTML da página.
-        $dadosWizard = $categorias->map(fn ($categoria) => [
-            'id' => $categoria->id,
-            'nome' => $categoria->nome_categoria,
-            'servicos' => $categoria->servicos->map(fn ($servico) => [
-                'id' => $servico->id,
-                'nome' => $servico->nome,
-                'descricao' => $servico->descricao,
-                'preco' => (float) $servico->preco_sugerido,
-                'prestador' => [
-                    'id' => $servico->prestador->id,
-                    'nome' => $servico->prestador->name,
-                    'area_atuacao' => optional($servico->prestador->prestadorProfile)->area_atuacao,
-                    'reputacao' => (float) (optional($servico->prestador->prestadorProfile)->reputacao_media ?? 5),
-                ],
-            ])->values(),
-        ])->values();
-
-        return view('cliente.agendar', compact('categorias', 'dadosWizard'));
+        return view('cliente.agendar', compact('categorias'));
     }
 
     public function agendarStore(Request $request)

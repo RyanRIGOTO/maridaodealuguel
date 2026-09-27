@@ -35,8 +35,8 @@
 
         <div class="grid sm:grid-cols-2 gap-4">
             <div>
-                <label for="cpf_cnpj" class="form-label">CPF <span class="text-rose-500">*</span></label>
-                <input id="cpf_cnpj" type="text" name="cpf_cnpj" value="{{ old('cpf_cnpj') }}" required maxlength="18" inputmode="numeric"
+                <label for="cpf_cnpj" class="form-label">CPF ou CNPJ <span class="text-rose-500">*</span></label>
+                <input id="cpf_cnpj" type="text" name="cpf_cnpj" value="{{ old('cpf_cnpj') }}" required maxlength="18" autocapitalize="characters" spellcheck="false"
                        class="form-input" placeholder="000.000.000-00">
             </div>
             <div>

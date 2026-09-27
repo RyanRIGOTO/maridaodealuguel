@@ -142,14 +142,26 @@
         @apply bg-ink-50/60;
     }
 
-    /* ---- Wizard de Agendamento ---- */
+    /* ---- Etapas e opções do agendamento ---- */
     .wizard-step-dot {
         @apply flex items-center justify-center w-9 h-9 rounded-full border-2 font-semibold text-sm shrink-0 transition-colors duration-150;
     }
+
+    .wizard-step-dot.etapa-atingida {
+        @apply bg-brand-500 border-brand-500 text-white;
+    }
+
+    .opcao-agendamento {
+        @apply rounded-lg border border-ink-300 bg-white text-ink-700 font-semibold transition-colors hover:border-brand-400 focus-visible:outline-brand-500;
+    }
+
+    .opcao-agendamento[aria-pressed="true"] {
+        @apply bg-brand-500 border-brand-500 text-white shadow-sm;
+    }
 }
 
-/* Alpine.js: esconde elementos até o componente inicializar */
-[x-cloak] {
+/* Mantém elementos ocultos mesmo quando possuem classes flex ou grid. */
+[hidden] {
     display: none !important;
 }
 
@@ -178,4 +190,3 @@
 ::-webkit-scrollbar-thumb {
     @apply bg-ink-300 rounded-full hover:bg-ink-400;
 }
-

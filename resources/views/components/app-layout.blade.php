@@ -17,13 +17,12 @@
 
     {{-- Estilos e Scripts Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="min-h-screen bg-ink-50 text-ink-900 font-sans antialiased flex flex-col" x-data="{ sidebarOpen: false }">
+<body class="min-h-screen bg-ink-50 text-ink-900 font-sans antialiased flex flex-col">
 
     <div class="lg:flex flex-1">
         {{-- Backdrop do menu mobile --}}
-        <div x-show="sidebarOpen" x-cloak class="fixed inset-0 bg-ink-900/40 backdrop-blur-sm z-30 lg:hidden" @click="sidebarOpen = false"></div>
+        <div data-fundo-menu hidden class="fixed inset-0 bg-ink-900/40 backdrop-blur-sm z-30 lg:hidden"></div>
 
         {{-- Barra Lateral de Navegação (Sidebar) --}}
         <x-sidebar :user="$user" />

@@ -9,12 +9,12 @@ use Carbon\Carbon;
 class RecebimentoService
 {
     /**
-     * RN7: Criar recebimento com taxa admin 10% e RN6: escrow/liberação 48h.
+     * RN7: Criar recebimento com taxa admin 5% e RN6: escrow/liberação 48h.
      */
     public static function criar(Agendamento $agendamento): Recebimento
     {
         $valorTotal = $agendamento->preco_acordado;
-        $taxaAdmin = round($valorTotal * 0.10, 2); // RN7: 10%
+        $taxaAdmin = round($valorTotal * 0.05, 2); // RN7: 5%
         $valorLiquido = $valorTotal - $taxaAdmin;
         $dataLiberacao = now()->addHours(48); // RN6: 48h security hold
 

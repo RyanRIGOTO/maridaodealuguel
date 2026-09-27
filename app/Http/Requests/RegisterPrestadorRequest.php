@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\CpfCnpj;
+use App\Rules\DocumentoUnico;
+use App\Support\Documento;
 use Illuminate\Foundation\Http\FormRequest;
 
 class RegisterPrestadorRequest extends FormRequest
@@ -32,7 +35,10 @@ class RegisterPrestadorRequest extends FormRequest
             $cep ? 'CEP '.$cep : '',
         ], fn ($valor) => $valor !== '');
 
+        $documento = $this->input('cpf_cnpj');
+
         $this->merge([
+            'cpf_cnpj' => is_string($documento) ? Documento::normalizar($documento) : $documento,
             'cep' => $cep,
             'uf' => $uf,
             'endereco_completo' => $endereco ? implode(' - ', $endereco) : null,
@@ -46,7 +52,7 @@ class RegisterPrestadorRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:100', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:20'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'cpf_cnpj' => ['required', 'string', 'max:20', 'unique:users,cpf_cnpj'], // RN2
+            'cpf_cnpj' => ['bail', 'required', 'string', new CpfCnpj, new DocumentoUnico], // RN2
             'data_nascimento' => ['required', 'date'],
             'cep' => ['nullable', 'regex:/^\d{8}$/'],
             'logradouro' => ['nullable', 'string', 'max:75'],
@@ -66,7 +72,8 @@ class RegisterPrestadorRequest extends FormRequest
     {
         return [
             'termos_lgpd.accepted' => 'Você deve aceitar os termos de uso e política de privacidade (LGPD).',
-            'cpf_cnpj.unique' => 'Este CPF/CNPJ já está cadastrado na plataforma.',
+            'cpf_cnpj.required' => 'Informe seu CPF ou CNPJ.',
+            'cpf_cnpj.string' => 'Informe um CPF ou CNPJ válido.',
             'email.unique' => 'Este e-mail já está cadastrado na plataforma.',
         ];
     }

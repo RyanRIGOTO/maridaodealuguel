@@ -1,16 +1,18 @@
 <x-app-layout title="Meus Serviços" subtitle="Cadastre e gerencie o catálogo de serviços que você oferece">
     {{-- Ação Superior: Adicionar Serviço --}}
-    <div x-data="{ showCreate: false }" class="mb-8">
+    <div class="mb-8">
         <div class="flex justify-between items-center mb-4">
             <p class="text-xs sm:text-sm text-ink-600">Total de serviços cadastrados: <strong>{{ $servicos->count() }}</strong></p>
-            <button type="button" class="btn-primary" @click="showCreate = !showCreate">
-                <i class="ti" :class="showCreate ? 'ti-x' : 'ti-plus'"></i>
-                <span x-text="showCreate ? 'Fechar Formulário' : 'Novo Serviço'"></span>
+            <button type="button" class="btn-primary" data-alternar="novo-servico" aria-controls="novo-servico" aria-expanded="false">
+                <i class="ti ti-plus" data-quando-fechado></i>
+                <i class="ti ti-x" data-quando-aberto hidden></i>
+                <span data-quando-fechado>Novo Serviço</span>
+                <span data-quando-aberto hidden>Fechar Formulário</span>
             </button>
         </div>
 
         {{-- Formulário de Cadastro de Novo Serviço --}}
-        <div x-show="showCreate" x-cloak class="card p-5 sm:p-6 mb-6 bg-white shadow-sm border border-brand-300 ring-1 ring-brand-500/10">
+        <div id="novo-servico" hidden class="card p-5 sm:p-6 mb-6 bg-white shadow-sm border border-brand-300 ring-1 ring-brand-500/10">
             <div class="flex items-center gap-2 mb-4 pb-3 border-b border-ink-100">
                 <i class="ti ti-tool text-brand-600 text-xl"></i>
                 <h2 class="font-bold text-ink-900 text-base">Cadastrar Novo Serviço</h2>
@@ -52,7 +54,7 @@
                         <i class="ti ti-device-floppy text-base"></i>
                         <span>Salvar Serviço</span>
                     </button>
-                    <button type="button" class="btn-secondary" @click="showCreate = false">Cancelar</button>
+                    <button type="button" class="btn-secondary" data-fechar="novo-servico">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -61,9 +63,9 @@
     {{-- Grid de Serviços Cadastrados --}}
     <div class="grid sm:grid-cols-2 gap-4">
         @forelse ($servicos as $servico)
-            <div x-data="{ editing: false }" class="card p-5 bg-white shadow-sm hover:border-brand-300 transition-all flex flex-col justify-between">
+            <div data-edicao class="card p-5 bg-white shadow-sm hover:border-brand-300 transition-all flex flex-col justify-between">
                 {{-- Modo Visualização --}}
-                <div x-show="!editing" class="flex flex-col justify-between h-full">
+                <div data-visualizacao class="flex flex-col justify-between h-full">
                     <div>
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
@@ -80,7 +82,7 @@
                     <div class="flex items-center justify-between mt-5 pt-3 border-t border-ink-100">
                         <span class="font-extrabold text-brand-600 text-lg">R$ {{ number_format($servico->preco_sugerido, 2, ',', '.') }}</span>
                         <div class="flex items-center gap-1.5">
-                            <button type="button" class="btn-secondary btn-sm" @click="editing = true" title="Editar serviço">
+                            <button type="button" class="btn-secondary btn-sm" data-editar title="Editar serviço">
                                 <i class="ti ti-edit text-xs"></i>
                                 <span>Editar</span>
                             </button>
@@ -96,7 +98,7 @@
                 </div>
 
                 {{-- Modo Edição Rápida --}}
-                <div x-show="editing" x-cloak>
+                <div data-formulario-edicao hidden>
                     <div class="flex items-center gap-2 mb-3 pb-2 border-b border-ink-100">
                         <i class="ti ti-edit text-brand-600 text-base"></i>
                         <span class="text-xs font-bold text-ink-800 uppercase tracking-wider">Editar Serviço</span>
@@ -138,7 +140,7 @@
                                 <i class="ti ti-check text-xs"></i>
                                 <span>Salvar</span>
                             </button>
-                            <button type="button" class="btn-secondary btn-sm" @click="editing = false">Cancelar</button>
+                            <button type="button" class="btn-secondary btn-sm" data-cancelar-edicao>Cancelar</button>
                         </div>
                     </form>
                 </div>

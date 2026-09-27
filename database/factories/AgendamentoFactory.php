@@ -16,12 +16,13 @@ class AgendamentoFactory extends Factory
     {
         $cliente = \App\Models\User::factory()->state(['role' => 'cliente']);
         $prestador = \App\Models\User::factory()->state(['role' => 'prestador']);
-        $servico = \App\Models\Servico::factory()->for($prestador);
 
         return [
             'cliente_id' => $cliente,
             'prestador_id' => $prestador,
-            'servico_id' => $servico,
+            'servico_id' => fn (array $attributes) => \App\Models\Servico::factory()->create([
+                'prestador_id' => $attributes['prestador_id'],
+            ])->id,
             'data_hora' => fake()->dateTimeBetween('+1 day', '+30 days'),
             'endereco_servico' => fake()->address(),
             'status' => fake()->randomElement(['pendente', 'confirmado', 'concluido', 'cancelado']),

@@ -5,7 +5,7 @@
 
 <header class="no-print h-16 bg-white border-b border-ink-300 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm">
     <div class="flex items-center gap-3">
-        <button class="lg:hidden btn-ghost !p-2" @click="sidebarOpen = !sidebarOpen" title="Abrir menu">
+        <button class="lg:hidden btn-ghost !p-2" type="button" data-menu-lateral aria-controls="menu-lateral" aria-expanded="false" title="Abrir menu">
             <i class="ti ti-menu-2 text-xl"></i>
         </button>
         <div>

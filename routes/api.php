@@ -10,17 +10,16 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\PerfilController;
 use App\Http\Controllers\Api\PublicoController;
 use App\Http\Controllers\Api\ServicoController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes - Maridão de Aluguel
+| Rotas da API - Maridão de Aluguel
 |--------------------------------------------------------------------------
-| Prefix: /api/v1
+| Prefixo: /api
 */
 
-// Health check
+// Verificação de disponibilidade
 Route::get('/health', fn() => response()->json(['status' => 'ok', 'app' => 'Maridão de Aluguel', 'version' => '1.0']));
 
 // Rotas Públicas (RN1)

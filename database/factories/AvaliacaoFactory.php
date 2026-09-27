@@ -18,8 +18,8 @@ class AvaliacaoFactory extends Factory
 
         return [
             'agendamento_id' => $agendamento,
-            'cliente_id' => $agendamento->cliente_id,
-            'prestador_id' => $agendamento->prestador_id,
+            'cliente_id' => fn (array $attributes) => \App\Models\Agendamento::findOrFail($attributes['agendamento_id'])->cliente_id,
+            'prestador_id' => fn (array $attributes) => \App\Models\Agendamento::findOrFail($attributes['agendamento_id'])->prestador_id,
             'nota' => fake()->numberBetween(1, 5),
             'comentario' => fake()->optional()->paragraph(),
             'data_avaliacao' => now(),

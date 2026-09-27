@@ -67,8 +67,7 @@ class AvaliacaoServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function criar_avaliacao_rn8_rn10_sucesso(): void
+    public function test_criar_avaliacao_rn8_rn10_sucesso(): void
     {
         $avaliacao = AvaliacaoService::criar(
             $this->agendamentoConcluido->id,
@@ -82,7 +81,7 @@ class AvaliacaoServiceTest extends TestCase
         $this->assertEquals('Excelente serviço!', $avaliacao->comentario);
         $this->assertEquals($this->cliente->id, $avaliacao->cliente_id);
         $this->assertEquals($this->prestador->id, $avaliacao->prestador_id);
-        $this->assertFalse($avaliacao->moderada);
+        $this->assertFalse($avaliacao->fresh()->moderada);
 
         // RN10: Reputação atualizada
         $this->prestador->refresh();
@@ -97,8 +96,7 @@ class AvaliacaoServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function criar_avaliacao_falha_nao_e_dono(): void
+    public function test_criar_avaliacao_falha_nao_e_dono(): void
     {
         $outroCliente = User::factory()->create(['role' => 'cliente']);
 
@@ -108,8 +106,7 @@ class AvaliacaoServiceTest extends TestCase
         AvaliacaoService::criar($this->agendamentoConcluido->id, $outroCliente->id, 5, 'Comentário');
     }
 
-    /** @test */
-    public function criar_avaliacao_falha_nao_concluido(): void
+    public function test_criar_avaliacao_falha_nao_concluido(): void
     {
         $agendamentoPendente = Agendamento::factory()->create([
             'cliente_id' => $this->cliente->id,
@@ -124,8 +121,7 @@ class AvaliacaoServiceTest extends TestCase
         AvaliacaoService::criar($agendamentoPendente->id, $this->cliente->id, 5, 'Comentário');
     }
 
-    /** @test */
-    public function criar_avaliacao_falha_ja_avaliado(): void
+    public function test_criar_avaliacao_falha_ja_avaliado(): void
     {
         // Cria primeira avaliação
         Avaliacao::factory()->create([
@@ -141,8 +137,7 @@ class AvaliacaoServiceTest extends TestCase
         AvaliacaoService::criar($this->agendamentoConcluido->id, $this->cliente->id, 5, 'Comentário');
     }
 
-    /** @test */
-    public function atualizar_reputacao_rn10_media_alta(): void
+    public function test_atualizar_reputacao_rn10_media_alta(): void
     {
         // Cria múltiplas avaliações altas
         Avaliacao::factory()->count(3)->create([
@@ -158,8 +153,7 @@ class AvaliacaoServiceTest extends TestCase
         $this->assertFalse($this->prestador->prestadorProfile->em_revisao);
     }
 
-    /** @test */
-    public function atualizar_reputacao_rn10_media_baixa_em_revisao(): void
+    public function test_atualizar_reputacao_rn10_media_baixa_em_revisao(): void
     {
         // Cria avaliações com média < 2.5
         Avaliacao::factory()->count(3)->create([
@@ -182,8 +176,7 @@ class AvaliacaoServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function atualizar_reputacao_ignora_moderadas(): void
+    public function test_atualizar_reputacao_ignora_moderadas(): void
     {
         Avaliacao::factory()->create([
             'prestador_id' => $this->prestador->id,
@@ -204,8 +197,7 @@ class AvaliacaoServiceTest extends TestCase
         $this->assertEquals(5.00, $this->prestador->prestadorProfile->reputacao_media);
     }
 
-    /** @test */
-    public function moderar_avaliacao_rn9_aprova(): void
+    public function test_moderar_avaliacao_rn9_aprova(): void
     {
         $avaliacao = Avaliacao::factory()->create([
             'prestador_id' => $this->prestador->id,
@@ -228,8 +220,7 @@ class AvaliacaoServiceTest extends TestCase
         $this->assertEquals(5.00, $this->prestador->prestadorProfile->reputacao_media); // Valor padrão sem avaliações não moderadas
     }
 
-    /** @test */
-    public function moderar_avaliacao_rn9_rejeita(): void
+    public function test_moderar_avaliacao_rn9_rejeita(): void
     {
         $avaliacao = Avaliacao::factory()->create([
             'prestador_id' => $this->prestador->id,

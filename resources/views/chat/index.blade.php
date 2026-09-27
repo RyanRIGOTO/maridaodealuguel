@@ -104,12 +104,4 @@
         </div>
     </div>
 
-    {{-- Auto scroll para o final das mensagens --}}
-    <script>
-        const thread = document.getElementById('thread-mensagens');
-        if (thread) {
-            thread.scrollTop = thread.scrollHeight;
-        }
-    </script>
 </x-app-layout>
-

@@ -14,9 +14,8 @@
 
     {{-- Estilos e Scripts Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="min-h-screen flex flex-col bg-ink-50 text-ink-900 font-sans antialiased" x-data="{ mobileMenu: false }">
+<body class="min-h-screen flex flex-col bg-ink-50 text-ink-900 font-sans antialiased">
     {{-- Cabeçalho Principal (Navbar Reutilizável) --}}
     <x-navbar />
 

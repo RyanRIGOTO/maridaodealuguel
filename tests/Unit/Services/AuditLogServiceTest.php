@@ -24,8 +24,7 @@ class AuditLogServiceTest extends TestCase
         Auth::login($this->user);
     }
 
-    /** @test */
-    public function log_cria_registro_rn14(): void
+    public function test_log_cria_registro_rn14(): void
     {
         $auditLog = AuditLogService::log(
             'teste_acao',
@@ -43,8 +42,7 @@ class AuditLogServiceTest extends TestCase
         $this->assertNotNull($auditLog->ip_address);
     }
 
-    /** @test */
-    public function log_sem_entidade_id_funciona(): void
+    public function test_log_sem_entidade_id_funciona(): void
     {
         $auditLog = AuditLogService::log('acao_sem_id', 'entidade_sem_id');
 
@@ -52,16 +50,14 @@ class AuditLogServiceTest extends TestCase
         $this->assertEquals('acao_sem_id', $auditLog->acao);
     }
 
-    /** @test */
-    public function log_sem_detalhes_funciona(): void
+    public function test_log_sem_detalhes_funciona(): void
     {
         $auditLog = AuditLogService::log('acao_sem_detalhes', 'entidade', 456, null);
 
         $this->assertNull($auditLog->detalhes);
     }
 
-    /** @test */
-    public function list_filtra_por_acao(): void
+    public function test_list_filtra_por_acao(): void
     {
         AuditLog::factory()->count(3)->create(['acao' => 'acao_teste', 'usuario_id' => $this->user->id]);
         AuditLog::factory()->count(2)->create(['acao' => 'outra_acao', 'usuario_id' => $this->user->id]);
@@ -74,8 +70,7 @@ class AuditLogServiceTest extends TestCase
         }
     }
 
-    /** @test */
-    public function list_filtra_por_entidade(): void
+    public function test_list_filtra_por_entidade(): void
     {
         AuditLog::factory()->count(2)->create(['entidade' => 'users', 'usuario_id' => $this->user->id]);
         AuditLog::factory()->count(3)->create(['entidade' => 'agendamentos', 'usuario_id' => $this->user->id]);
@@ -88,8 +83,7 @@ class AuditLogServiceTest extends TestCase
         }
     }
 
-    /** @test */
-    public function list_filtra_por_usuario(): void
+    public function test_list_filtra_por_usuario(): void
     {
         $outroUser = User::factory()->create();
         AuditLog::factory()->count(2)->create(['usuario_id' => $this->user->id]);
@@ -103,8 +97,7 @@ class AuditLogServiceTest extends TestCase
         }
     }
 
-    /** @test */
-    public function list_filtra_por_data(): void
+    public function test_list_filtra_por_data(): void
     {
         AuditLog::factory()->create(['created_at' => now()->subDays(10), 'usuario_id' => $this->user->id]);
         AuditLog::factory()->create(['created_at' => now()->subDays(5), 'usuario_id' => $this->user->id]);
@@ -118,8 +111,7 @@ class AuditLogServiceTest extends TestCase
         $this->assertEquals(2, $result->total()); // últimos 7 dias
     }
 
-    /** @test */
-    public function list_ordena_por_data_decrescente(): void
+    public function test_list_ordena_por_data_decrescente(): void
     {
         $antigo = AuditLog::factory()->create(['created_at' => now()->subDays(5), 'usuario_id' => $this->user->id]);
         $novo = AuditLog::factory()->create(['created_at' => now(), 'usuario_id' => $this->user->id]);
@@ -130,8 +122,7 @@ class AuditLogServiceTest extends TestCase
         $this->assertEquals($antigo->id, $result->last()->id);
     }
 
-    /** @test */
-    public function list_paginacao_padrao_50(): void
+    public function test_list_paginacao_padrao_50(): void
     {
         AuditLog::factory()->count(60)->create(['usuario_id' => $this->user->id]);
 
@@ -141,8 +132,7 @@ class AuditLogServiceTest extends TestCase
         $this->assertEquals(60, $result->total());
     }
 
-    /** @test */
-    public function list_paginacao_customizada(): void
+    public function test_list_paginacao_customizada(): void
     {
         AuditLog::factory()->count(25)->create(['usuario_id' => $this->user->id]);
 

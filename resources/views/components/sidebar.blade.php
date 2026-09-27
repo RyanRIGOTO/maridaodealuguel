@@ -1,8 +1,7 @@
 @props(['user'])
 
-<aside
-    class="no-print fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-ink-300 flex flex-col transform transition-transform duration-200 lg:translate-x-0 lg:static lg:shrink-0 shadow-sm lg:shadow-none"
-    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+<aside id="menu-lateral"
+    class="no-print fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-ink-300 flex flex-col -translate-x-full transform transition-transform duration-200 lg:translate-x-0 lg:static lg:shrink-0 shadow-sm lg:shadow-none"
 >
     {{-- Logotipo da Marca com Componente Padronizado --}}
     <div class="h-16 flex items-center px-5 border-b border-ink-300">

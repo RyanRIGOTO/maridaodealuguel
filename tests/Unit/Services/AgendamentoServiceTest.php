@@ -50,8 +50,7 @@ class AgendamentoServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function criar_agendamento_sucesso_rn5(): void
+    public function test_criar_agendamento_sucesso_rn5(): void
     {
         $dataHora = Carbon::now()->addDays(2)->setTime(10, 0);
         $endereco = 'Rua do Cliente, 456';
@@ -78,8 +77,7 @@ class AgendamentoServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function criar_agendamento_falha_servico_inativo(): void
+    public function test_criar_agendamento_falha_servico_inativo(): void
     {
         $this->servico->update(['status' => 'inativo']);
         $dataHora = Carbon::now()->addDays(2)->setTime(10, 0);
@@ -90,8 +88,7 @@ class AgendamentoServiceTest extends TestCase
         AgendamentoService::criar($this->cliente->id, $this->servico->id, $dataHora, 'Endereço');
     }
 
-    /** @test */
-    public function criar_agendamento_falha_prestador_inativo(): void
+    public function test_criar_agendamento_falha_prestador_inativo(): void
     {
         $this->prestador->update(['status' => 'inativo']);
         $dataHora = Carbon::now()->addDays(2)->setTime(10, 0);
@@ -102,8 +99,7 @@ class AgendamentoServiceTest extends TestCase
         AgendamentoService::criar($this->cliente->id, $this->servico->id, $dataHora, 'Endereço');
     }
 
-    /** @test */
-    public function verificar_conflito_rn3_prestador_mesmo_horario(): void
+    public function test_verificar_conflito_rn3_prestador_mesmo_horario(): void
     {
         // Cria agendamento existente
         $dataHora = Carbon::now()->addDays(2)->setTime(10, 0);
@@ -122,8 +118,7 @@ class AgendamentoServiceTest extends TestCase
         AgendamentoService::verificarConflito($this->prestador->id, $this->cliente->id, $novaDataHora);
     }
 
-    /** @test */
-    public function verificar_conflito_rn3_cliente_mesmo_horario(): void
+    public function test_verificar_conflito_rn3_cliente_mesmo_horario(): void
     {
         $dataHora = Carbon::now()->addDays(2)->setTime(10, 0);
         Agendamento::factory()->create([
@@ -140,8 +135,7 @@ class AgendamentoServiceTest extends TestCase
         AgendamentoService::verificarConflito($this->prestador->id, $this->cliente->id, $novaDataHora);
     }
 
-    /** @test */
-    public function verificar_conflito_rn3_permite_fora_janela_2h(): void
+    public function test_verificar_conflito_rn3_permite_fora_janela_2h(): void
     {
         $dataHora = Carbon::now()->addDays(2)->setTime(10, 0);
         Agendamento::factory()->create([
@@ -158,8 +152,7 @@ class AgendamentoServiceTest extends TestCase
         $this->assertTrue(true);
     }
 
-    /** @test */
-    public function criar_agendamento_bloqueia_avaliacao_pendente_rn8(): void
+    public function test_criar_agendamento_bloqueia_avaliacao_pendente_rn8(): void
     {
         // Cria agendamento concluído sem avaliação
         $agendamentoAntigo = Agendamento::factory()->create([
@@ -178,8 +171,7 @@ class AgendamentoServiceTest extends TestCase
         AgendamentoService::criar($this->cliente->id, $this->servico->id, $dataHora, 'Endereço');
     }
 
-    /** @test */
-    public function confirmar_agendamento_rn5_sucesso(): void
+    public function test_confirmar_agendamento_rn5_sucesso(): void
     {
         $agendamento = Agendamento::factory()->create([
             'prestador_id' => $this->prestador->id,
@@ -195,8 +187,7 @@ class AgendamentoServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function confirmar_agendamento_falha_nao_e_prestador(): void
+    public function test_confirmar_agendamento_falha_nao_e_prestador(): void
     {
         $outroPrestador = User::factory()->create(['role' => 'prestador']);
         $agendamento = Agendamento::factory()->create([
@@ -210,8 +201,7 @@ class AgendamentoServiceTest extends TestCase
         AgendamentoService::confirmar($agendamento, $outroPrestador->id);
     }
 
-    /** @test */
-    public function confirmar_agendamento_falha_nao_pendente(): void
+    public function test_confirmar_agendamento_falha_nao_pendente(): void
     {
         $agendamento = Agendamento::factory()->create([
             'prestador_id' => $this->prestador->id,
@@ -224,8 +214,7 @@ class AgendamentoServiceTest extends TestCase
         AgendamentoService::confirmar($agendamento, $this->prestador->id);
     }
 
-    /** @test */
-    public function concluir_agendamento_rn5_rn6_rn7_sucesso(): void
+    public function test_concluir_agendamento_rn5_rn6_rn7_sucesso(): void
     {
         $agendamento = Agendamento::factory()->create([
             'prestador_id' => $this->prestador->id,
@@ -252,8 +241,7 @@ class AgendamentoServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function concluir_agendamento_falha_nao_confirmado(): void
+    public function test_concluir_agendamento_falha_nao_confirmado(): void
     {
         $agendamento = Agendamento::factory()->create([
             'prestador_id' => $this->prestador->id,
@@ -266,8 +254,7 @@ class AgendamentoServiceTest extends TestCase
         AgendamentoService::concluir($agendamento, $this->prestador->id);
     }
 
-    /** @test */
-    public function cancelar_agendamento_rn4_sem_multa_mais_24h(): void
+    public function test_cancelar_agendamento_rn4_sem_multa_mais_24h(): void
     {
         $agendamento = Agendamento::factory()->create([
             'status' => 'confirmado',
@@ -285,8 +272,7 @@ class AgendamentoServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function cancelar_agendamento_rn4_com_multa_menos_24h(): void
+    public function test_cancelar_agendamento_rn4_com_multa_menos_24h(): void
     {
         $agendamento = Agendamento::factory()->create([
             'status' => 'confirmado',
@@ -297,15 +283,12 @@ class AgendamentoServiceTest extends TestCase
         $resultado = AgendamentoService::cancelar($agendamento, $this->cliente->id);
 
         $this->assertEquals('cancelado', $resultado->status);
-        $this->assertDatabaseHas('audit_logs', [
-            'acao' => 'agendamento_cancelado',
-            'entidade_id' => $agendamento->id,
-            'detalhes->multa' => 20.00, // 20% de multa
-        ]);
+        $auditoria = AuditLog::where('acao', 'agendamento_cancelado')
+            ->where('entidade_id', $agendamento->id)->sole();
+        $this->assertEquals(20.00, $auditoria->detalhes['multa']); // 20% de multa
     }
 
-    /** @test */
-    public function cancelar_agendamento_falha_status_invalido(): void
+    public function test_cancelar_agendamento_falha_status_invalido(): void
     {
         $agendamento = Agendamento::factory()->create([
             'status' => 'concluido',

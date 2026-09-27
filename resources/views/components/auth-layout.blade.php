@@ -14,7 +14,6 @@
 
     {{-- Estilos e Scripts Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="min-h-screen bg-ink-100 flex items-center justify-center px-4 py-12 font-sans antialiased">
     <div class="w-full {{ ($wide ?? false) ? 'max-w-xl' : 'max-w-md' }}">

@@ -7,8 +7,8 @@
         </h2>
 
         @forelse ($pendentes as $agendamento)
-            <div class="card p-5 mb-4 bg-white shadow-sm border border-brand-300 ring-1 ring-brand-500/10" x-data="{ open: {{ $loop->first ? 'true' : 'false' }} }">
-                <div class="flex items-center justify-between gap-3 cursor-pointer" @click="open = !open">
+            <details class="group card p-5 mb-4 bg-white shadow-sm border border-brand-300 ring-1 ring-brand-500/10" @if ($loop->first) open @endif>
+                <summary class="flex items-center justify-between gap-3 cursor-pointer list-none">
                     <div class="min-w-0">
                         <p class="font-bold text-ink-900 text-base">{{ $agendamento->servico->nome ?? 'Serviço prestado' }}</p>
                         <p class="text-xs sm:text-sm text-ink-600 mt-0.5 flex items-center gap-1.5">
@@ -17,12 +17,13 @@
                         </p>
                     </div>
                     <div class="flex items-center gap-2 text-brand-600 font-semibold text-xs shrink-0">
-                        <span x-text="open ? 'Ocultar formulário' : 'Avaliar agora'"></span>
-                        <i class="ti" :class="open ? 'ti-chevron-up' : 'ti-chevron-down'"></i>
+                        <span class="group-open:hidden">Avaliar agora</span>
+                        <span class="hidden group-open:inline">Ocultar formulário</span>
+                        <i class="ti ti-chevron-down group-open:rotate-180"></i>
                     </div>
-                </div>
+                </summary>
 
-                <div x-show="open" x-cloak class="mt-5 pt-5 border-t border-ink-100">
+                <div class="mt-5 pt-5 border-t border-ink-100">
                     <form method="POST" action="{{ route('cliente.avaliacoes.store', $agendamento) }}" class="space-y-4">
                         @csrf
                         <div>
@@ -40,7 +41,7 @@
                         </button>
                     </form>
                 </div>
-            </div>
+            </details>
         @empty
             <div class="card p-8 text-center text-ink-600 bg-white shadow-sm">
                 <div class="w-10 h-10 rounded-full bg-[#EAF3DE] flex items-center justify-center mx-auto mb-2 text-[#27500A]">

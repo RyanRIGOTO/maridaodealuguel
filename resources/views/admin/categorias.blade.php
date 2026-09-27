@@ -20,9 +20,9 @@
     {{-- Grid de Categorias Cadastradas --}}
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         @forelse ($categorias as $categoria)
-            <div x-data="{ editing: false }" class="card p-4 bg-white shadow-sm hover:border-brand-300 transition-all">
+            <div data-edicao class="card p-4 bg-white shadow-sm hover:border-brand-300 transition-all">
                 {{-- Modo Visualização --}}
-                <div x-show="!editing" class="flex items-center justify-between gap-3">
+                <div data-visualizacao class="flex items-center justify-between gap-3">
                     <div class="min-w-0">
                         <p class="font-bold text-ink-900 text-base leading-tight">{{ $categoria->nome_categoria }}</p>
                         <p class="text-xs text-ink-500 mt-1 flex items-center gap-1">
@@ -32,7 +32,7 @@
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <x-status-badge :status="$categoria->status" />
-                        <button type="button" class="btn-secondary !p-1.5" @click="editing = true" title="Editar categoria">
+                        <button type="button" class="btn-secondary !p-1.5" data-editar title="Editar categoria">
                             <i class="ti ti-edit text-xs"></i>
                         </button>
                         <form method="POST" action="{{ route('admin.categorias.destroy', $categoria) }}"
@@ -46,7 +46,7 @@
                 </div>
 
                 {{-- Modo Edição --}}
-                <div x-show="editing" x-cloak>
+                <div data-formulario-edicao hidden>
                     <form method="POST" action="{{ route('admin.categorias.update', $categoria) }}" class="space-y-3">
                         @csrf @method('PATCH')
                         <div>
@@ -65,7 +65,7 @@
                                 <i class="ti ti-check text-xs"></i>
                                 <span>Salvar</span>
                             </button>
-                            <button type="button" class="btn-secondary btn-sm" @click="editing = false">Cancelar</button>
+                            <button type="button" class="btn-secondary btn-sm" data-cancelar-edicao>Cancelar</button>
                         </div>
                     </form>
                 </div>

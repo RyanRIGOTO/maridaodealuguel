@@ -52,8 +52,7 @@ class RecebimentoServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function criar_recebimento_rn6_rn7_calculo_correto(): void
+    public function test_criar_recebimento_rn6_rn7_calculo_correto(): void
     {
         $recebimento = RecebimentoService::criar($this->agendamentoConcluido);
 
@@ -75,8 +74,7 @@ class RecebimentoServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function criar_recebimento_valores_diferentes(): void
+    public function test_criar_recebimento_valores_diferentes(): void
     {
         $agendamento = Agendamento::factory()->create([
             'prestador_id' => $this->prestador->id,
@@ -91,15 +89,14 @@ class RecebimentoServiceTest extends TestCase
         $this->assertEquals(315.45, $recebimento->valor_liquido_prestador);
     }
 
-    /** @test */
-    public function liberar_recebimento_muda_status_para_pago(): void
+    public function test_liberar_recebimento_muda_status_para_pago(): void
     {
         $recebimento = Recebimento::factory()->create([
             'agendamento_id' => $this->agendamentoConcluido->id,
             'status_recebimento' => 'pendente',
         ]);
 
-        $recebimentoLiberado = RecebimentoService::liberar($recebimento);
+        $recebimentoLiberado = app(RecebimentoService::class)->liberar($recebimento);
 
         $this->assertEquals('pago', $recebimentoLiberado->status_recebimento);
         $this->assertTrue($recebimentoLiberado->data_liberacao->isPast());
@@ -112,15 +109,14 @@ class RecebimentoServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
-    public function liberar_recebimento_ja_pago_mantem_pago(): void
+    public function test_liberar_recebimento_ja_pago_mantem_pago(): void
     {
         $recebimento = Recebimento::factory()->create([
             'agendamento_id' => $this->agendamentoConcluido->id,
             'status_recebimento' => 'pago',
         ]);
 
-        $recebimentoLiberado = RecebimentoService::liberar($recebimento);
+        $recebimentoLiberado = app(RecebimentoService::class)->liberar($recebimento);
 
         $this->assertEquals('pago', $recebimentoLiberado->status_recebimento);
     }
