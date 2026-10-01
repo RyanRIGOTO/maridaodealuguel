@@ -75,7 +75,7 @@ class CadastroDocumentoTest extends TestCase
     {
         User::factory()->create(['cpf_cnpj' => $salvo, 'role' => 'prestador']);
         $resposta = $api ? $this->postJson($rota, $this->dados($enviado)) : $this->post($rota, $this->dados($enviado));
-        $mensagem = 'Este CPF/CNPJ já está cadastrado na plataforma.';
+        $mensagem = 'Informe um CPF ou CNPJ válido, ou tente outro CPF/CNPJ.';
         if ($api) {
             $resposta->assertUnprocessable()->assertJsonPath('errors.cpf_cnpj.0', $mensagem);
         } else {

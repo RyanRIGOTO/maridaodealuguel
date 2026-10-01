@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Rules;
 
 use App\Models\User;
 use App\Support\Documento;
@@ -18,6 +18,7 @@ class DocumentoUnico implements ValidationRule
         )->exists();
 
         if ($existe) {
+            // Mesma frase de documento inválido: não confirma se o CPF/CNPJ já existe na base.
             $fail('Informe um CPF ou CNPJ válido, ou tente outro CPF/CNPJ.');
         }
     }

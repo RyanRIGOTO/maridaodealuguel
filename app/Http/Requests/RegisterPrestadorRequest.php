@@ -74,7 +74,9 @@ class RegisterPrestadorRequest extends FormRequest
             'termos_lgpd.accepted' => 'Você deve aceitar os termos de uso e política de privacidade (LGPD).',
             'cpf_cnpj.required' => 'Informe seu CPF ou CNPJ.',
             'cpf_cnpj.string' => 'Informe um CPF ou CNPJ válido.',
-            'email.unique' => 'Este e-mail já está cadastrado na plataforma.',
+            // Mesma frase para formato inválido e e-mail já usado, para não confirmar cadastro existente.
+            'email.email' => 'Informe um e-mail válido, ou tente outro e-mail.',
+            'email.unique' => 'Informe um e-mail válido, ou tente outro e-mail.',
         ];
     }
 }
