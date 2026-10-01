@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Rules;
+namespace App\Services;
 
 use App\Support\Documento;
 use Closure;

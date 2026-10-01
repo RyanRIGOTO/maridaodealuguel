@@ -8,7 +8,7 @@ class Documento
     {
         $documento = strtoupper(trim($documento));
 
-        // Retira apenas a pontuação de uma máscara completa e correta.
+        // tirando a pontuação e espaços,caso tenha digitado com máscara.
         if (preg_match('/\A(?:[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}|[A-Z0-9]{2}\.[A-Z0-9]{3}\.[A-Z0-9]{3}\/[A-Z0-9]{4}-[0-9]{2})\z/', $documento)) {
             return str_replace(['.', '-', '/'], '', $documento);
         }
