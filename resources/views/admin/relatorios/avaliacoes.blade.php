@@ -12,7 +12,7 @@
             @forelse ($avaliacoes as $avaliacao)
                 <tr>
                     <td class="font-bold text-ink-900">{{ $avaliacao->prestador->name }}</td>
-                    <td class="text-ink-600 font-mono text-xs">{{ $avaliacao->data_avaliacao->format('d/m/Y') }}</td>
+                    <td class="text-ink-600 font-mono text-xs">{{ $avaliacao->created_at->format('d/m/Y') }}</td>
                     <td>
                         <div class="flex items-center gap-1.5">
                             <x-star-rating :value="$avaliacao->nota" />

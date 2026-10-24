@@ -10,11 +10,8 @@ class Chat extends Model
     use HasFactory;
 
     protected $table = 'chats';
-    protected $fillable = [
-        'agendamento_id', 'remetente_id', 'destinatario_id',
-        'mensagem', 'data_hora', 'lido',
-    ];
-    protected $casts = ['data_hora' => 'datetime', 'lido' => 'boolean'];
+    protected $fillable = ['agendamento_id', 'remetente_id', 'mensagem', 'proposta_horario_id', 'lido'];
+    protected $casts = ['lido' => 'boolean'];
 
     public function agendamento()
     {
@@ -26,8 +23,14 @@ class Chat extends Model
         return $this->belongsTo(User::class, 'remetente_id');
     }
 
-    public function destinatario()
+    public function proposta()
     {
-        return $this->belongsTo(User::class, 'destinatario_id');
+        return $this->belongsTo(PropostaHorario::class, 'proposta_horario_id');
+    }
+
+    // O destinatário é a outra parte do agendamento (não é gravado — 3FN).
+    public function getDestinatarioIdAttribute(): ?int
+    {
+        return $this->agendamento?->outraParteId($this->remetente_id);
     }
 }

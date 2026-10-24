@@ -43,18 +43,23 @@ class FluxosWebTest extends TestCase
         $cliente = User::factory()->create(['role' => 'cliente']);
         $servico = Servico::factory()->create();
 
+        // "Em outro endereço": o endereço digitado vira um registro em enderecos.
         $this->actingAs($cliente)->post('/cliente/agendar', [
             'servico_id' => $servico->id,
             'data' => now()->addDays(3)->toDateString(),
             'hora' => '10:00',
-            'endereco_servico' => 'Rua de Teste, 123',
+            'endereco_opcao' => 'outro',
+            'cep' => '87500-000', 'logradouro' => 'Rua de Teste', 'numero' => '123',
+            'bairro' => 'Centro', 'cidade' => 'Umuarama', 'uf' => 'pr',
         ])->assertSessionHasNoErrors()->assertRedirect(route('cliente.historico'));
 
+        $endereco = \App\Models\Endereco::where('user_id', $cliente->id)->sole();
+        $this->assertSame(['87500000', 'PR'], [$endereco->cep, $endereco->uf]);
         $this->assertDatabaseHas('agendamentos', [
             'cliente_id' => $cliente->id,
             'servico_id' => $servico->id,
+            'endereco_id' => $endereco->id,
             'status' => 'pendente',
-            'endereco_servico' => 'Rua de Teste, 123',
         ]);
     }
 
@@ -67,9 +72,13 @@ class FluxosWebTest extends TestCase
             'servico_id' => $servico->id,
             'data' => now()->addDays(3)->toDateString(),
             'hora' => '10:00',
-            'endereco_servico' => 'Rua de Teste, 123',
+            'endereco_opcao' => 'outro',
+            'logradouro' => 'Rua de Teste', 'numero' => '123', 'bairro' => 'Centro', 'cidade' => 'Umuarama', 'uf' => 'PR',
         ])->assertRedirect('/cliente/agendar')->assertSessionHasErrors('servico_id')
-            ->assertSessionHasInput('endereco_servico', 'Rua de Teste, 123');
+            ->assertSessionHasInput('logradouro', 'Rua de Teste');
+
+        // Agendamento recusado não deixa endereço solto no banco.
+        $this->assertDatabaseCount('enderecos', 0);
     }
 
     public function test_cliente_visualiza_e_envia_avaliacao(): void
@@ -90,7 +99,9 @@ class FluxosWebTest extends TestCase
     {
         $servico = Servico::factory()->create();
         $this->actingAs($servico->prestador)->get('/prestador/servicos')
-            ->assertOk()->assertSee($servico->nome);
+            ->assertOk()->assertSee($servico->nome)
+            ->assertSee('data-combobox', false) // campo único de pesquisa/escolha de categoria
+            ->assertSee($servico->categoria->nome_categoria);
 
         $this->from('/prestador/servicos')->patch('/prestador/servicos/'.$servico->id, [
             'nome' => 'Serviço atualizado',

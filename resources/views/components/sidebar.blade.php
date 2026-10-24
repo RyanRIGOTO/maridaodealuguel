@@ -73,6 +73,10 @@
                 <i class="ti ti-chart-bar text-lg"></i>
                 <span>Relatórios</span>
             </a>
+            <a href="{{ route('admin.configuracoes') }}" class="sidebar-link {{ request()->routeIs('admin.configuracoes*') ? 'active' : '' }}">
+                <i class="ti ti-settings text-lg"></i>
+                <span>Configurações</span>
+            </a>
         @endif
     </nav>
 

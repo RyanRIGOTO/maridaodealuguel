@@ -5,7 +5,8 @@
             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-400">
                 <i class="ti ti-search text-base"></i>
             </div>
-            <input type="text" class="form-input !pl-10" placeholder="Filtrar ou pesquisar agendamentos..." disabled>
+            <input type="search" name="busca" value="{{ request('busca') }}" class="form-input !pl-10"
+                   placeholder="Pesquisar por serviço ou prestador..." aria-label="Pesquisar agendamentos">
         </div>
         <div class="sm:w-56">
             <select name="status" onchange="this.form.submit()" class="form-select">
@@ -32,19 +33,25 @@
                             <i class="ti ti-user text-xs"></i>
                             <span>Prestador: <strong>{{ $agendamento->prestador->name }}</strong></span>
                         </p>
+                        @if ($agendamento->status === 'cancelado' && $agendamento->cancelamento?->multa)
+                            <p class="text-xs text-rose-700 mt-1 flex items-center gap-1.5">
+                                <i class="ti ti-receipt text-xs"></i>
+                                <span>Cancelado com menos de 24h: multa de R$ {{ number_format($agendamento->cancelamento->multa, 2, ',', '.') }}</span>
+                            </p>
+                        @endif
                         <div class="flex flex-wrap items-center gap-4 text-xs text-ink-600 mt-2.5">
                             <span class="inline-flex items-center gap-1"><i class="ti ti-calendar text-xs text-brand-600"></i> {{ $agendamento->data_hora->format('d/m/Y') }}</span>
                             <span class="inline-flex items-center gap-1"><i class="ti ti-clock text-xs text-brand-600"></i> {{ $agendamento->data_hora->format('H:i') }}</span>
-                            <span class="inline-flex items-center gap-1 truncate max-w-xs" title="{{ $agendamento->endereco_servico }}">
+                            <span class="inline-flex items-center gap-1 truncate max-w-xs" title="{{ $agendamento->endereco?->completo }}">
                                 <i class="ti ti-map-pin text-xs text-brand-600"></i>
-                                <span>{{ $agendamento->endereco_servico }}</span>
+                                <span>{{ $agendamento->endereco?->completo }}</span>
                             </span>
                         </div>
                     </div>
 
                     {{-- Valor e Ações --}}
                     <div class="flex sm:flex-col items-center sm:items-end justify-between gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-ink-100">
-                        <p class="font-extrabold text-brand-600 text-lg">R$ {{ number_format($agendamento->preco_acordado, 2, ',', '.') }}</p>
+                        <p class="font-extrabold text-brand-600 text-lg"><x-preco :valor="$agendamento->preco_acordado" /></p>
 
                         <div class="flex items-center gap-2">
                             <a href="{{ route('chat.index', ['agendamento' => $agendamento->id]) }}" class="btn-secondary btn-sm" title="Conversar com o prestador">
@@ -55,8 +62,12 @@
                             @if ($agendamento->status === 'concluido' && $agendamento->avaliacao)
                                 <x-star-rating :value="$agendamento->avaliacao->nota" />
                             @elseif (in_array($agendamento->status, ['pendente', 'confirmado']))
+                                {{-- RN4: avisa a multa antes de o cliente confirmar o cancelamento --}}
+                                @php($multaPrevista = \App\Services\AgendamentoService::multaPrevista($agendamento, auth()->id()))
                                 <form method="POST" action="{{ route('cliente.agendamentos.cancelar', $agendamento) }}"
-                                      onsubmit="return confirm('Tem certeza que deseja cancelar este agendamento?');">
+                                      data-confirmar="{{ $multaPrevista
+                                          ? 'Faltam menos de 24h para o atendimento. Cancelar agora gera multa de R$ '.number_format($multaPrevista, 2, ',', '.').', repassada ao prestador. Deseja cancelar mesmo assim?'
+                                          : 'Tem certeza que deseja cancelar este agendamento?' }}">
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit" class="btn-danger btn-sm">

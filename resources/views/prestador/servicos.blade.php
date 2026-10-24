@@ -26,15 +26,7 @@
                         <input id="nome" type="text" name="nome" value="{{ old('nome') }}" required maxlength="100"
                                class="form-input" placeholder="Ex: Instalação de luminárias e plafons">
                     </div>
-                    <div>
-                        <label for="categoria_id" class="form-label font-semibold text-ink-800">Categoria <span class="text-rose-500">*</span></label>
-                        <select id="categoria_id" name="categoria_id" required class="form-select">
-                            <option value="">Selecione a categoria</option>
-                            @foreach ($categorias as $categoria)
-                                <option value="{{ $categoria->id }}" {{ old('categoria_id') == $categoria->id ? 'selected' : '' }}>{{ $categoria->nome_categoria }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <x-campo-categoria :categorias="$categorias" :selecionada="old('categoria_id')" id="categoria-novo-servico" />
                 </div>
 
                 <div>
@@ -47,6 +39,7 @@
                     <label for="preco_sugerido" class="form-label font-semibold text-ink-800">Preço Sugerido (R$) <span class="text-rose-500">*</span></label>
                     <input id="preco_sugerido" type="number" step="0.01" min="0" max="99999.99" name="preco_sugerido"
                            value="{{ old('preco_sugerido') }}" required class="form-input" placeholder="0,00">
+                    <p class="text-xs text-ink-600 mt-1">Use 0 para oferecer o serviço de graça.</p>
                 </div>
 
                 <div class="flex items-center gap-3 pt-2">
@@ -80,7 +73,7 @@
                     </div>
 
                     <div class="flex items-center justify-between mt-5 pt-3 border-t border-ink-100">
-                        <span class="font-extrabold text-brand-600 text-lg">R$ {{ number_format($servico->preco_sugerido, 2, ',', '.') }}</span>
+                        <span class="font-extrabold text-brand-600 text-lg"><x-preco :valor="$servico->preco_sugerido" /></span>
                         <div class="flex items-center gap-1.5">
                             <button type="button" class="btn-secondary btn-sm" data-editar title="Editar serviço">
                                 <i class="ti ti-edit text-xs"></i>
@@ -110,14 +103,7 @@
                             <label class="form-label text-xs font-semibold">Nome do Serviço</label>
                             <input type="text" name="nome" value="{{ $servico->nome }}" required maxlength="100" class="form-input text-xs">
                         </div>
-                        <div>
-                            <label class="form-label text-xs font-semibold">Categoria</label>
-                            <select name="categoria_id" required class="form-select text-xs">
-                                @foreach ($categorias as $categoria)
-                                    <option value="{{ $categoria->id }}" {{ $servico->categoria_id == $categoria->id ? 'selected' : '' }}>{{ $categoria->nome_categoria }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-campo-categoria :categorias="$categorias" :selecionada="$servico->categoria_id" id="categoria-servico-{{ $servico->id }}" compacto />
                         <div>
                             <label class="form-label text-xs font-semibold">Descrição</label>
                             <textarea name="descricao" rows="2" maxlength="2000" required class="form-input text-xs">{{ $servico->descricao }}</textarea>

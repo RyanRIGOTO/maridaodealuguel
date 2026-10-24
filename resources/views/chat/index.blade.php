@@ -8,13 +8,15 @@
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-ink-400">
                             <i class="ti ti-search text-xs"></i>
                         </div>
-                        <input type="text" class="form-input !py-1.5 !pl-8 text-xs" placeholder="Buscar conversas..." disabled>
+                        <input type="search" data-busca-conversas autocomplete="off" aria-label="Buscar conversas"
+                               class="form-input !py-1.5 !pl-8 text-xs" placeholder="Buscar por nome ou serviço...">
                     </div>
                 </div>
 
-                <div class="flex-1 overflow-y-auto divide-y divide-ink-100">
+                <div id="lista-conversas" class="flex-1 overflow-y-auto divide-y divide-ink-100">
                     @forelse ($conversas as $conversa)
                         <a href="{{ route('chat.index', ['agendamento' => $conversa->agendamento_id]) }}"
+                           data-conversa="{{ ($conversa->outro_usuario->name ?? '').' '.$conversa->servico_nome }}"
                            class="flex items-center gap-3 p-3.5 hover:bg-ink-100/60 transition-colors {{ $agendamentoAtivo && $agendamentoAtivo->id === $conversa->agendamento_id ? 'bg-brand-50 border-r-2 border-brand-500' : '' }}">
                             <div class="w-10 h-10 rounded-full {{ $agendamentoAtivo && $agendamentoAtivo->id === $conversa->agendamento_id ? 'bg-brand-500 text-white' : 'bg-brand-100 text-brand-700' }} flex items-center justify-center font-bold text-sm shrink-0">
                                 {{ strtoupper(substr($conversa->outro_usuario->name ?? '?', 0, 1)) }}
@@ -35,6 +37,7 @@
                             Nenhuma conversa ativa no momento.
                         </div>
                     @endforelse
+                    <p data-conversa-nao-encontrada hidden class="p-6 text-center text-xs text-ink-600">Nenhuma conversa encontrada.</p>
                 </div>
             </div>
 
@@ -52,7 +55,7 @@
                             </div>
                             <div>
                                 <p class="font-bold text-ink-900 text-sm leading-none">{{ $outro->name ?? 'Usuário' }}</p>
-                                <p class="text-xs text-brand-600 font-medium mt-1">{{ $agendamentoAtivo->servico->nome ?? 'Atendimento' }} · Agendamento #{{ $agendamentoAtivo->id }}</p>
+                                <p id="chat-cabecalho" class="text-xs text-brand-600 font-medium mt-1">{{ $agendamentoAtivo->servico->nome ?? 'Atendimento' }} · {{ $agendamentoAtivo->data_hora->format('d/m/Y \à\s H:i') }}</p>
                             </div>
                         </div>
 
@@ -68,8 +71,26 @@
                             <div class="flex {{ $minha ? 'justify-end' : 'justify-start' }}">
                                 <div class="max-w-[78%] {{ $minha ? 'bg-brand-500 text-white rounded-2xl rounded-tr-xs shadow-xs' : 'bg-white text-ink-900 border border-ink-200 rounded-2xl rounded-tl-xs shadow-xs' }} px-4 py-2.5 text-sm">
                                     <p class="leading-relaxed whitespace-pre-wrap">{{ $mensagem->mensagem }}</p>
+                                    @if ($mensagem->proposta)
+                                        {{-- Só o cliente responde; quem propõe é o prestador --}}
+                                        @if ($mensagem->proposta->status === 'pendente' && $agendamentoAtivo->cliente_id === auth()->id())
+                                            <div class="flex gap-2 mt-2">
+                                                @foreach (['aceitar' => ['Aceitar', 'btn-success'], 'recusar' => ['Recusar', 'btn-danger']] as $resposta => [$rotulo, $classe])
+                                                    <form method="POST" action="{{ route('chat.propostas.responder', $mensagem->proposta) }}">
+                                                        @csrf @method('PATCH')
+                                                        <input type="hidden" name="resposta" value="{{ $resposta }}">
+                                                        <button type="submit" class="{{ $classe }} btn-sm">{{ $rotulo }}</button>
+                                                    </form>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <p class="text-[11px] mt-1.5 font-semibold">
+                                                {{ ['pendente' => 'Aguardando resposta do cliente', 'aceita' => '✓ Aceita', 'recusada' => '✗ Recusada', 'substituida' => 'Substituída por uma proposta mais nova'][$mensagem->proposta->status] }}
+                                            </p>
+                                        @endif
+                                    @endif
                                     <p class="text-[10px] mt-1.5 {{ $minha ? 'text-brand-100' : 'text-ink-600' }} text-right">
-                                        {{ $mensagem->data_hora->format('d/m H:i') }}
+                                        {{ $mensagem->created_at->format('d/m H:i') }}
                                     </p>
                                 </div>
                             </div>

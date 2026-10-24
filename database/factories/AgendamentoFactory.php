@@ -19,12 +19,16 @@ class AgendamentoFactory extends Factory
 
         return [
             'cliente_id' => $cliente,
+            // Atalho de teste: não é coluna (o prestador vem do serviço). Serve para criar
+            // o serviço do prestador certo e é descartado em newModel().
             'prestador_id' => $prestador,
             'servico_id' => fn (array $attributes) => \App\Models\Servico::factory()->create([
                 'prestador_id' => $attributes['prestador_id'],
             ])->id,
+            'endereco_id' => fn (array $attributes) => \App\Models\Endereco::factory()->create([
+                'user_id' => $attributes['cliente_id'],
+            ])->id,
             'data_hora' => fake()->dateTimeBetween('+1 day', '+30 days'),
-            'endereco_servico' => fake()->address(),
             'status' => fake()->randomElement(['pendente', 'confirmado', 'concluido', 'cancelado']),
             'preco_acordado' => fake()->randomFloat(2, 50, 500),
         ];
@@ -72,5 +76,12 @@ class AgendamentoFactory extends Factory
             'data_hora' => fake()->dateTimeBetween('+1 day', '+30 days'),
             'status' => fake()->randomElement(['pendente', 'confirmado']),
         ]);
+    }
+
+    public function newModel(array $attributes = [])
+    {
+        unset($attributes['prestador_id']);
+
+        return parent::newModel($attributes);
     }
 }

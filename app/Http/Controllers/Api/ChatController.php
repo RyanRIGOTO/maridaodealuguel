@@ -16,23 +16,24 @@ class ChatController extends Controller
         $user = $request->user();
 
         // Verifica se usuario esta envolvido no agendamento
-        if ($agendamento->cliente_id !== $user->id && $agendamento->prestador_id !== $user->id) {
+        if (!$agendamento->participa($user->id)) {
             return response()->json([
                 'success' => false,
                 'error' => ['code' => 'FORBIDDEN', 'message' => 'Acesso negado.'],
             ], 403);
         }
 
-        // Marca mensagens nao lidas como lidas
+        // Marca como lidas as mensagens da outra parte
         Chat::where('agendamento_id', $agendamento->id)
-            ->where('destinatario_id', $user->id)
+            ->where('remetente_id', '!=', $user->id)
             ->where('lido', false)
             ->update(['lido' => true]);
 
-        $mensagens = Chat::with(['remetente', 'destinatario'])
+        $mensagens = Chat::with(['remetente', 'proposta', 'agendamento.servico'])
             ->where('agendamento_id', $agendamento->id)
-            ->orderBy('data_hora', 'asc')
-            ->paginate($request->per_page ?? 50);
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->paginate($this->porPagina($request, 50));
 
         return response()->json([
             'success' => true,
@@ -44,32 +45,29 @@ class ChatController extends Controller
     {
         $data = $request->validate([
             'agendamento_id' => 'required|exists:agendamentos,id',
-            'destinatario_id' => 'required|exists:users,id',
             'mensagem' => 'required|string|max:2000',
         ]);
 
-        $agendamento = \App\Models\Agendamento::findOrFail($data['agendamento_id']);
+        $agendamento = Agendamento::findOrFail($data['agendamento_id']);
         $user = $request->user();
 
-        if ($agendamento->cliente_id !== $user->id && $agendamento->prestador_id !== $user->id) {
+        if (!$agendamento->participa($user->id)) {
             return response()->json([
                 'success' => false,
                 'error' => ['code' => 'FORBIDDEN', 'message' => 'Voce nao faz parte deste agendamento.'],
             ], 403);
         }
 
+        // O destinatário é sempre a outra parte do agendamento (não é informado pelo cliente da API).
         $chat = Chat::create([
-            'agendamento_id' => $data['agendamento_id'],
+            'agendamento_id' => $agendamento->id,
             'remetente_id' => $user->id,
-            'destinatario_id' => $data['destinatario_id'],
             'mensagem' => $data['mensagem'],
-            'data_hora' => now(),
-            'lido' => false,
         ]);
 
         return response()->json([
             'success' => true,
-            'data' => new ChatResource($chat->load(['remetente', 'destinatario'])),
+            'data' => new ChatResource($chat->load(['remetente', 'agendamento.servico'])),
             'message' => 'Mensagem enviada.',
         ], 201);
     }
@@ -78,26 +76,24 @@ class ChatController extends Controller
     {
         $user = $request->user();
 
-        $agendamentos = Agendamento::where(function ($q) use ($user) {
-            $q->where('cliente_id', $user->id)->orWhere('prestador_id', $user->id);
-        })->whereHas('chat')->with(['cliente', 'prestador', 'servico'])->latest('updated_at')->get();
+        $agendamentos = Agendamento::doParticipante($user->id)
+            ->whereHas('chat')
+            ->with(['cliente', 'prestador', 'servico'])
+            ->withCount(['chat as nao_lidas' => fn ($q) => $q->where('remetente_id', '!=', $user->id)->where('lido', false)])
+            ->latest('updated_at')
+            ->get();
 
         $conversas = $agendamentos->map(function ($agendamento) use ($user) {
-            $ultimaMensagem = $agendamento->chat()->latest('data_hora')->first();
-            $naoLidas = $agendamento->chat()
-                ->where('destinatario_id', $user->id)
-                ->where('lido', false)
-                ->count();
+            $ultimaMensagem = $agendamento->chat()->latest('created_at')->latest('id')->first();
+            $outro = $agendamento->cliente_id === $user->id ? $agendamento->prestador : $agendamento->cliente;
 
             return [
                 'agendamento_id' => $agendamento->id,
-                'outro_usuario' => $agendamento->cliente_id === $user->id
-                    ? ['id' => $agendamento->prestador->id, 'name' => $agendamento->prestador->name]
-                    : ['id' => $agendamento->cliente->id, 'name' => $agendamento->cliente->name],
+                'outro_usuario' => ['id' => $outro->id, 'name' => $outro->name],
                 'servico_nome' => $agendamento->servico?->nome,
                 'ultima_mensagem' => $ultimaMensagem?->mensagem,
-                'ultima_mensagem_data' => $ultimaMensagem?->data_hora,
-                'nao_lidas' => $naoLidas,
+                'ultima_mensagem_data' => $ultimaMensagem?->created_at,
+                'nao_lidas' => $agendamento->nao_lidas,
             ];
         });
 

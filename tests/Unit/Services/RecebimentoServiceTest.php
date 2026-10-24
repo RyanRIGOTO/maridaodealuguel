@@ -5,8 +5,8 @@ namespace Tests\Unit\Services;
 use Tests\TestCase;
 use App\Services\RecebimentoService;
 use App\Models\Agendamento;
+use App\Models\Configuracao;
 use App\Models\Recebimento;
-use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\Servico;
 use Carbon\Carbon;
@@ -22,16 +22,12 @@ class RecebimentoServiceTest extends TestCase
     {
         parent::setUp();
 
+        // Os valores esperados destes testes usam uma taxa de 10%, definida pelo administrador.
+        Configuracao::definir(Configuracao::TAXA_PLATAFORMA, '10.00');
+
         $this->cliente = User::factory()->create(['role' => 'cliente', 'status' => 'ativo']);
         $this->prestador = User::factory()->create(['role' => 'prestador', 'status' => 'ativo']);
-        $this->prestador->prestadorProfile()->create([
-            'endereco_completo' => 'Rua Teste, 123',
-            'data_nascimento' => '1990-01-01',
-            'area_atuacao' => 'São Paulo',
-            'disponibilidade_horarios' => [],
-            'reputacao_media' => 5.00,
-            'em_revisao' => false,
-        ]);
+        $this->prestador->prestadorProfile()->create(['area_atuacao' => 'São Paulo']);
 
         $categoria = \App\Models\Categoria::factory()->create(['nome_categoria' => 'Teste']);
 

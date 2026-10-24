@@ -24,13 +24,20 @@
                             <i class="ti ti-user text-xs"></i>
                             <span>Cliente: <strong>{{ $agendamento->cliente->name }}</strong></span>
                         </p>
+                        @if ($agendamento->status === 'cancelado' && $agendamento->cancelamento?->multa)
+                            <p class="text-xs text-emerald-700 mt-1 flex items-center gap-1.5">
+                                <i class="ti ti-receipt text-xs"></i>
+                                <span>Cancelado pelo cliente com menos de 24h: multa de R$ {{ number_format($agendamento->cancelamento->multa, 2, ',', '.') }} a seu favor
+                                    ({{ $agendamento->pagamentos->contains(fn ($p) => $p->tipo === 'multa' && $p->status === 'aprovado') ? 'paga pelo cliente' : 'aguardando pagamento do cliente' }})</span>
+                            </p>
+                        @endif
                         <div class="flex flex-wrap items-center gap-3 text-xs text-ink-600 mt-2">
                             <span class="inline-flex items-center gap-1"><i class="ti ti-calendar text-xs text-brand-600"></i> {{ $agendamento->data_hora->format('d/m/Y') }}</span>
                             <span class="inline-flex items-center gap-1"><i class="ti ti-clock text-xs text-brand-600"></i> {{ $agendamento->data_hora->format('H:i') }}</span>
                         </div>
                     </div>
                     <div class="text-left sm:text-right shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-ink-100">
-                        <p class="font-extrabold text-brand-600 text-lg">R$ {{ number_format($agendamento->preco_acordado, 2, ',', '.') }}</p>
+                        <p class="font-extrabold text-brand-600 text-lg"><x-preco :valor="$agendamento->preco_acordado" /></p>
                         @if ($agendamento->avaliacao)
                             <div class="mt-1 flex items-center sm:justify-end gap-1">
                                 <x-star-rating :value="$agendamento->avaliacao->nota" />

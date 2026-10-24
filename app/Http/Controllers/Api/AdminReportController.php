@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Recebimento;
-use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\AvaliacaoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,10 +18,12 @@ class AdminReportController extends Controller
      */
     public function servicosPorCategoria(Request $request): JsonResponse
     {
+        $this->validarPeriodo($request);
+
         $query = Agendamento::with(['servico.categoria', 'prestador', 'cliente'])
             ->when($request->filled('data_inicio'), fn($q) => $q->whereDate('data_hora', '>=', $request->data_inicio))
             ->when($request->filled('data_fim'), fn($q) => $q->whereDate('data_hora', '<=', $request->data_fim))
-            ->when($request->filled('prestador_id'), fn($q) => $q->where('prestador_id', $request->prestador_id));
+            ->when($request->filled('prestador_id'), fn($q) => $q->doPrestador($request->integer('prestador_id')));
 
         $dados = $query->get()->groupBy('servico.categoria.nome_categoria')->map(function ($items, $categoria) {
             return [
@@ -40,7 +42,9 @@ class AdminReportController extends Controller
 
     public function atendimentosPorPrestador(Request $request): JsonResponse
     {
-        $query = Agendamento::with('prestador')
+        $this->validarPeriodo($request);
+
+        $query = Agendamento::with(['servico', 'prestador'])
             ->when($request->filled('data_inicio'), fn($q) => $q->whereDate('data_hora', '>=', $request->data_inicio))
             ->when($request->filled('data_fim'), fn($q) => $q->whereDate('data_hora', '<=', $request->data_fim));
 
@@ -64,17 +68,20 @@ class AdminReportController extends Controller
 
     public function financeiro(Request $request): JsonResponse
     {
-        $query = Recebimento::with('agendamento:id,data_hora,prestador_id,cliente_id')
+        $this->validarPeriodo($request);
+
+        $query = Recebimento::with('agendamento:id,data_hora,servico_id,cliente_id')
             ->when($request->filled('data_inicio'), fn($q) => $q->whereDate('created_at', '>=', $request->data_inicio))
             ->when($request->filled('data_fim'), fn($q) => $q->whereDate('created_at', '<=', $request->data_fim))
             ->when($request->filled('status_recebimento'), fn($q) => $q->where('status_recebimento', $request->status_recebimento));
 
-        $recebimentos = $query->latest()->paginate($request->per_page ?? 20);
+        $recebimentos = $query->latest()->paginate($this->porPagina($request, 20));
 
         $totais = Recebimento::query()
             ->when($request->filled('data_inicio'), fn($q) => $q->whereDate('created_at', '>=', $request->data_inicio))
             ->when($request->filled('data_fim'), fn($q) => $q->whereDate('created_at', '<=', $request->data_fim))
-            ->selectRaw('COALESCE(SUM(valor_total),0) as total_bruto, COALESCE(SUM(taxa_admin),0) as total_taxa, COALESCE(SUM(valor_liquido_prestador),0) as total_liquido')
+            // Taxa e líquido são calculados a partir do percentual de cada recebimento (RN7).
+            ->selectRaw('COALESCE(SUM(valor_total),0) as total_bruto, COALESCE(SUM('.Recebimento::SQL_TAXA.'),0) as total_taxa, COALESCE(SUM('.Recebimento::SQL_LIQUIDO.'),0) as total_liquido')
             ->first();
 
         return response()->json([
@@ -92,7 +99,7 @@ class AdminReportController extends Controller
 
     public function auditoria(Request $request): JsonResponse
     {
-        $logs = AuditLogService::list($request->only(['acao', 'entidade', 'usuario_id', 'date_from', 'date_to']));
+        $logs = AuditLogService::list($request->only(['acao', 'entidade', 'usuario_id', 'date_from', 'date_to', 'per_page']));
 
         return response()->json([
             'success' => true,
@@ -102,11 +109,11 @@ class AdminReportController extends Controller
 
     public function moderarAvaliacoes(Request $request): JsonResponse
     {
-        $query = \App\Models\Avaliacao::with(['cliente', 'prestador', 'agendamento.servico'])
+        $query = Avaliacao::with(['cliente', 'agendamento.servico.prestador'])
             ->when($request->filled('moderada'), fn($q) => $q->where('moderada', $request->boolean('moderada')))
             ->when($request->filled('nota_min'), fn($q) => $q->where('nota', '>=', $request->nota_min));
 
-        $avaliacoes = $query->latest('data_avaliacao')->paginate($request->per_page ?? 20);
+        $avaliacoes = $query->latest()->paginate($this->porPagina($request, 20));
 
         return response()->json([
             'success' => true,
@@ -114,14 +121,14 @@ class AdminReportController extends Controller
         ]);
     }
 
-    public function moderarAvaliacao(Request $request, \App\Models\Avaliacao $avaliacao): JsonResponse
+    public function moderarAvaliacao(Request $request, Avaliacao $avaliacao): JsonResponse
     {
         $data = $request->validate([
             'moderada' => 'required|boolean',
             'justificativa' => 'required|string|max:500',
         ]);
 
-        \App\Services\AvaliacaoService::moderar(
+        AvaliacaoService::moderar(
             $avaliacao,
             $data['moderada'],
             $data['justificativa'],
@@ -134,11 +141,9 @@ class AdminReportController extends Controller
         ]);
     }
 
-    public function deletarAvaliacao(Request $request, $avaliacaoId): JsonResponse
+    public function deletarAvaliacao(Request $request, Avaliacao $avaliacao): JsonResponse
     {
         // RN9: Apenas admin pode deletar
-        $avaliacao = \App\Models\Avaliacao::findOrFail($avaliacaoId);
-
         $justificativa = $request->validate(['justificativa' => 'required|string|max:500'])['justificativa'];
 
         AuditLogService::log('avaliacao_deletada_admin', 'avaliacoes', $avaliacao->id, [
@@ -149,11 +154,19 @@ class AdminReportController extends Controller
         $avaliacao->delete();
 
         // Recalcular reputacao do prestador
-        \App\Services\AvaliacaoService::atualizarReputacao($avaliacao->prestador_id);
+        AvaliacaoService::atualizarReputacao($avaliacao->prestador_id);
 
         return response()->json([
             'success' => true,
             'message' => 'Avaliacao removida com sucesso.',
+        ]);
+    }
+
+    private function validarPeriodo(Request $request): void
+    {
+        $request->validate([
+            'data_inicio' => ['nullable', 'date'],
+            'data_fim' => ['nullable', 'date', 'after_or_equal:data_inicio'],
         ]);
     }
 }

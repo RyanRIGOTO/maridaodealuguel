@@ -14,15 +14,17 @@ class AvaliacaoFactory extends Factory
 
     public function definition(): array
     {
-        $agendamento = \App\Models\Agendamento::factory()->concluido();
-
         return [
-            'agendamento_id' => $agendamento,
-            'cliente_id' => fn (array $attributes) => \App\Models\Agendamento::findOrFail($attributes['agendamento_id'])->cliente_id,
-            'prestador_id' => fn (array $attributes) => \App\Models\Agendamento::findOrFail($attributes['agendamento_id'])->prestador_id,
+            // Atalhos de teste (não são colunas: cliente e prestador vêm do agendamento).
+            // Usados para criar o agendamento certo e descartados em newModel().
+            'cliente_id' => null,
+            'prestador_id' => null,
+            'agendamento_id' => fn (array $attributes) => \App\Models\Agendamento::factory()->concluido()->create(array_filter([
+                'cliente_id' => $attributes['cliente_id'],
+                'prestador_id' => $attributes['prestador_id'],
+            ]))->id,
             'nota' => fake()->numberBetween(1, 5),
             'comentario' => fake()->optional()->paragraph(),
-            'data_avaliacao' => now(),
             'moderada' => false,
         ];
     }
@@ -46,5 +48,12 @@ class AvaliacaoFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'nota' => fake()->numberBetween(4, 5),
         ]);
+    }
+
+    public function newModel(array $attributes = [])
+    {
+        unset($attributes['cliente_id'], $attributes['prestador_id']);
+
+        return parent::newModel($attributes);
     }
 }

@@ -49,6 +49,17 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
+        // Gmail usado na recuperação de senha. A senha é uma App Password do Google.
+        'gmail' => [
+            'transport' => 'smtp',
+            'scheme' => 'smtp',
+            'host' => 'smtp.gmail.com',
+            'port' => 587,
+            'username' => env('SMTP_MAILER'),
+            'password' => env('SMTP_SENHA'),
+            'timeout' => 15,
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],

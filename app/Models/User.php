@@ -13,28 +13,40 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'email', 'phone', 'password', 'role', 'status',
-        'cpf_cnpj', 'termos_lgpd',
+        'cpf_cnpj', 'data_nascimento', 'termos_aceitos_em',
     ];
 
     protected $hidden = ['password', 'remember_token'];
+
+    // Mesmos padrões da migration, para o model já nascer com eles antes de ir ao banco.
+    protected $attributes = [
+        'role' => 'cliente',
+        'status' => 'ativo',
+    ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'termos_aceitos_em' => 'datetime',
+            'data_nascimento' => 'date',
             'password' => 'hashed',
-            'termos_lgpd' => 'boolean',
         ];
-    }
-
-    public function clienteProfile()
-    {
-        return $this->hasOne(ClienteProfile::class, 'user_id');
     }
 
     public function prestadorProfile()
     {
         return $this->hasOne(PrestadorProfile::class, 'user_id');
+    }
+
+    public function enderecos()
+    {
+        return $this->hasMany(Endereco::class, 'user_id');
+    }
+
+    public function enderecoPrincipal()
+    {
+        return $this->hasOne(Endereco::class, 'user_id')->where('principal', true);
     }
 
     public function servicos()
@@ -47,29 +59,15 @@ class User extends Authenticatable
         return $this->hasMany(Agendamento::class, 'cliente_id');
     }
 
+    // O prestador é dono dos serviços; os agendamentos chegam por eles.
     public function agendamentosComoPrestador()
     {
-        return $this->hasMany(Agendamento::class, 'prestador_id');
-    }
-
-    public function avaliacoesComoCliente()
-    {
-        return $this->hasMany(Avaliacao::class, 'cliente_id');
-    }
-
-    public function avaliacoesComoPrestador()
-    {
-        return $this->hasMany(Avaliacao::class, 'prestador_id');
+        return $this->hasManyThrough(Agendamento::class, Servico::class, 'prestador_id', 'servico_id');
     }
 
     public function mensagensEnviadas()
     {
         return $this->hasMany(Chat::class, 'remetente_id');
-    }
-
-    public function mensagensRecebidas()
-    {
-        return $this->hasMany(Chat::class, 'destinatario_id');
     }
 
     public function isAdmin(): bool

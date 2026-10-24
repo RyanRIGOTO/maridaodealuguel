@@ -1,12 +1,16 @@
-@props(['titulo', 'periodo' => []])
+@props(['titulo', 'periodo' => [], 'voltar' => true])
 
 <x-app-layout :title="$titulo">
     {{-- Ações Superiores (Filtro de Data e Impressão) --}}
     <div class="no-print mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <a href="{{ route('admin.relatorios') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600 hover:text-brand-600 transition-colors">
-            <i class="ti ti-arrow-left text-base"></i>
-            <span>Voltar aos relatórios</span>
-        </a>
+        @if ($voltar)
+            <a href="{{ route('admin.relatorios') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600 hover:text-brand-600 transition-colors">
+                <i class="ti ti-arrow-left text-base"></i>
+                <span>Voltar aos relatórios</span>
+            </a>
+        @else
+            <span></span>
+        @endif
 
         <div class="flex flex-wrap items-center gap-2.5">
             <form method="GET" class="flex items-center gap-2">

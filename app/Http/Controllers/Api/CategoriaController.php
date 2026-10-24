@@ -38,7 +38,7 @@ class CategoriaController extends Controller
             'status' => 'nullable|in:ativo,inativo',
         ]);
 
-        $categoria = Categoria::create($data);
+        $categoria = Categoria::create([...$data, 'status' => $data['status'] ?? 'ativo']);
         AuditLogService::log('categoria_criada', 'categorias', $categoria->id);
 
         return response()->json([
@@ -67,6 +67,14 @@ class CategoriaController extends Controller
 
     public function destroy(Categoria $categoria): JsonResponse
     {
+        // Excluir apagaria em cascata serviços, agendamentos, recebimentos e avaliações.
+        if ($categoria->servicos()->exists()) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'CONFLICT', 'message' => 'Categoria com serviços vinculados. Inative-a em vez de excluir.'],
+            ], 409);
+        }
+
         AuditLogService::log('categoria_removida', 'categorias', $categoria->id);
         $categoria->delete();
 

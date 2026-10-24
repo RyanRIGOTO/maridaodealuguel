@@ -12,11 +12,11 @@ class AvaliacaoResource extends JsonResource
         return [
             'id' => $this->id,
             'agendamento_id' => $this->agendamento_id,
-            'cliente_id' => $this->cliente_id,
+            'cliente_id' => $this->agendamento?->cliente_id,
             'prestador_id' => $this->prestador_id,
             'nota' => $this->nota,
             'comentario' => $this->comentario,
-            'data_avaliacao' => $this->data_avaliacao,
+            'data_avaliacao' => $this->created_at,
             'moderada' => $this->moderada,
             'created_at' => $this->created_at,
             'cliente' => new UserResource($this->whenLoaded('cliente')),

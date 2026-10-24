@@ -15,7 +15,8 @@ class AgendamentoResource extends JsonResource
             'prestador_id' => $this->prestador_id,
             'servico_id' => $this->servico_id,
             'data_hora' => $this->data_hora,
-            'endereco_servico' => $this->endereco_servico,
+            // O endereço do atendimento só vai para quem participa do agendamento (ou admin).
+            'endereco' => new EnderecoResource($this->whenLoaded('endereco')),
             'status' => $this->status,
             'preco_acordado' => $this->preco_acordado,
             'created_at' => $this->created_at,
@@ -25,6 +26,11 @@ class AgendamentoResource extends JsonResource
             'servico' => new ServicoResource($this->whenLoaded('servico')),
             'avaliacao' => new AvaliacaoResource($this->whenLoaded('avaliacao')),
             'recebimento' => new RecebimentoResource($this->whenLoaded('recebimento')),
+            'cancelamento' => $this->whenLoaded('cancelamento', fn () => $this->cancelamento ? [
+                'cancelado_por' => $this->cancelamento->cancelado_por,
+                'multa' => $this->cancelamento->multa,
+                'cancelado_em' => $this->cancelamento->created_at,
+            ] : null),
             'pendente_avaliacao' => $this->when(
                 $this->status === 'concluido' && $this->resource->relationLoaded('avaliacao'),
                 fn() => $this->avaliacao === null

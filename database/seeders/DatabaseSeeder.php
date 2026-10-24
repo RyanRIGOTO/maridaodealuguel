@@ -3,17 +3,20 @@
 namespace Database\Seeders;
 
 use App\Models\Agendamento;
-use App\Models\AuditLog;
 use App\Models\Avaliacao;
 use App\Models\Categoria;
 use App\Models\Chat;
+use App\Models\Configuracao;
 use App\Models\Recebimento;
 use App\Models\Servico;
 use App\Models\User;
-use Carbon\Carbon;
+use App\Services\AuditLogService;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
+/**
+ * Dados de demonstração. Rodar só em banco de desenvolvimento: php artisan db:seed
+ * Senha de todos os usuários de demonstração: senha123 (admin e contas de teste: ver ContasTesteSeeder).
+ */
 class DatabaseSeeder extends Seeder
 {
     private array $prestadores = [];
@@ -23,7 +26,6 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        $this->createAdmin();
         $this->createCategorias();
         $this->createPrestadores();
         $this->createServicos();
@@ -33,31 +35,27 @@ class DatabaseSeeder extends Seeder
         $this->createAvaliacoes();
         $this->createChats();
 
-        $this->command->info('Database seeded successfully!');
-        $this->command->info('Admin: admin@maridaodealuguel.com.br / senha123');
-        $this->command->info('Prestador 1: joao.silva@email.com / senha123');
-        $this->command->info('Prestador 2: maria.santos@email.com / senha123');
-        $this->command->info('Prestador 3: carlos.oliveira@email.com / senha123');
-        $this->command->info('Cliente 1: ana.costa@email.com / senha123');
-        $this->command->info('Cliente 2: pedro.almeida@email.com / senha123');
+        $this->call(ContasTesteSeeder::class);
+
+        $this->command->info('Banco populado com dados de demonstração.');
+        $this->command->info('Prestadores: joao.silva@email.com, maria.santos@email.com, carlos.oliveira@email.com');
+        $this->command->info('Clientes: ana.costa@email.com, pedro.almeida@email.com (senha de todos: senha123)');
     }
 
-    private function createAdmin(): void
+    /** CPF válido a partir de 9 dígitos (para os dados de demonstração passarem na validação). */
+    public static function cpf(string $base): string
     {
-        $admin = User::create([
-            'name' => 'Administrador do Sistema',
-            'email' => 'admin@maridaodealuguel.com.br',
-            'phone' => '(11) 99999-0000',
-            'password' => Hash::make('senha123'),
-            'role' => 'admin',
-            'status' => 'ativo',
-            'cpf_cnpj' => '000.000.000-00',
-            'termos_lgpd' => true,
-            'email_verified_at' => now(),
-        ]);
-        AuditLog::log('usuario_criado', 'users', $admin->id, ['role' => 'admin']);
+        foreach ([10, 11] as $peso) {
+            $soma = 0;
+            foreach (str_split($base) as $i => $digito) {
+                $soma += (int) $digito * ($peso - $i);
+            }
+            $resto = $soma % 11;
+            $base .= $resto < 2 ? '0' : (string) (11 - $resto);
+        }
+
+        return $base;
     }
-    
 
     private function createCategorias(): void
     {
@@ -70,51 +68,51 @@ class DatabaseSeeder extends Seeder
     private function createPrestadores(): void
     {
         $prestadoresData = [
-            ['name' => 'João Silva', 'email' => 'joao.silva@email.com', 'phone' => '(11) 98888-1111', 'cpf_cnpj' => '111.222.333-44', 'endereco' => 'Rua das Flores, 123 - São Paulo/SP', 'nascimento' => '1985-03-15', 'area' => 'Zona Sul e Centro de SP', 'disponibilidade' => ['seg' => ['08:00-18:00'], 'ter' => ['08:00-18:00'], 'qua' => ['08:00-18:00'], 'qui' => ['08:00-18:00'], 'sex' => ['08:00-17:00']]],
-            ['name' => 'Maria Santos', 'email' => 'maria.santos@email.com', 'phone' => '(11) 97777-2222', 'cpf_cnpj' => '222.333.444-55', 'endereco' => 'Av. Paulista, 1000 - São Paulo/SP', 'nascimento' => '1990-07-22', 'area' => 'Grande São Paulo', 'disponibilidade' => ['seg' => ['09:00-18:00'], 'ter' => ['09:00-18:00'], 'qua' => ['09:00-18:00'], 'qui' => ['09:00-18:00'], 'sex' => ['09:00-17:00'], 'sab' => ['09:00-13:00']]],
-            ['name' => 'Carlos Oliveira', 'email' => 'carlos.oliveira@email.com', 'phone' => '(11) 96666-3333', 'cpf_cnpj' => '333.444.555-66', 'endereco' => 'Rua Augusta, 500 - São Paulo/SP', 'nascimento' => '1982-11-10', 'area' => 'Zona Oeste e Zona Norte', 'disponibilidade' => ['seg' => ['07:00-16:00'], 'ter' => ['07:00-16:00'], 'qua' => ['07:00-16:00'], 'qui' => ['07:00-16:00'], 'sex' => ['07:00-15:00']]],
+            ['name' => 'João Silva', 'email' => 'joao.silva@email.com', 'phone' => '(44) 98888-1111', 'cpf' => '111444777', 'nascimento' => '1985-03-15', 'area' => 'Centro e Zona Norte de Umuarama',
+                'endereco' => ['87501000', 'Rua das Flores', '123', 'Centro'], 'dias' => [[1, '08:00', '18:00'], [2, '08:00', '18:00'], [3, '08:00', '18:00'], [4, '08:00', '18:00'], [5, '08:00', '17:00']]],
+            ['name' => 'Maria Santos', 'email' => 'maria.santos@email.com', 'phone' => '(44) 97777-2222', 'cpf' => '222555888', 'nascimento' => '1990-07-22', 'area' => 'Umuarama e região',
+                'endereco' => ['87502000', 'Avenida Paraná', '1000', 'Zona I'], 'dias' => [[1, '09:00', '18:00'], [3, '09:00', '18:00'], [5, '09:00', '17:00'], [6, '09:00', '13:00']]],
+            ['name' => 'Carlos Oliveira', 'email' => 'carlos.oliveira@email.com', 'phone' => '(44) 96666-3333', 'cpf' => '333666999', 'nascimento' => '1982-11-10', 'area' => 'Zona Sul e Zona Oeste',
+                'endereco' => ['87503000', 'Rua Ministro Oliveira Salazar', '500', 'Zona III'], 'dias' => [[1, '07:00', '16:00'], [2, '07:00', '16:00'], [4, '07:00', '16:00']]],
         ];
+
         foreach ($prestadoresData as $data) {
-            $user = User::create([
-                'name' => $data['name'], 'email' => $data['email'], 'phone' => $data['phone'],
-                'password' => Hash::make('senha123'), 'role' => 'prestador', 'status' => 'ativo',
-                'cpf_cnpj' => $data['cpf_cnpj'], 'termos_lgpd' => true, 'email_verified_at' => now(),
-            ]);
-            $user->prestadorProfile()->create([
-                'endereco_completo' => $data['endereco'], 'data_nascimento' => $data['nascimento'],
-                'area_atuacao' => $data['area'], 'disponibilidade_horarios' => $data['disponibilidade'],
-                'reputacao_media' => 5.00, 'em_revisao' => false,
-            ]);
+            $user = $this->criarUsuario($data, 'prestador');
+            $perfil = $user->prestadorProfile()->create(['area_atuacao' => $data['area']]);
+
+            foreach ($data['dias'] as [$dia, $inicio, $fim]) {
+                $perfil->disponibilidades()->create(['dia_semana' => $dia, 'hora_inicio' => $inicio, 'hora_fim' => $fim]);
+            }
+
             $this->prestadores[] = $user;
-            AuditLog::log('usuario_criado', 'users', $user->id, ['role' => 'prestador']);
         }
     }
 
     private function createServicos(): void
     {
-        $catEletrica = Categoria::where('nome_categoria', 'Elétrica')->first();
-        $catEncanamento = Categoria::where('nome_categoria', 'Encanamento')->first();
-        $catPintura = Categoria::where('nome_categoria', 'Pintura')->first();
-        $catMarcenaria = Categoria::where('nome_categoria', 'Marcenaria')->first();
-        $catLimpeza = Categoria::where('nome_categoria', 'Limpeza')->first();
+        $categoria = fn (string $nome) => Categoria::where('nome_categoria', $nome)->value('id');
 
         $servicosData = [
-            [$this->prestadores[0]->id, $catEletrica->id, 'Instalação de Tomadas', 'Instalação e troca de tomadas e interruptores.', 80.00],
-            [$this->prestadores[0]->id, $catEletrica->id, 'Troca de Disjuntores', 'Substituição de disjuntores com defeito.', 120.00],
-            [$this->prestadores[0]->id, $catEncanamento->id, 'Desentupimento de Pia', 'Desentupimento profissional de pias e ralos.', 100.00],
-            [$this->prestadores[1]->id, $catEncanamento->id, 'Conserto de Vazamentos', 'Identificação e reparo de vazamentos em tubulações.', 180.00],
-            [$this->prestadores[1]->id, $catEncanamento->id, 'Instalação de Torneiras', 'Instalação de torneiras e chuveiros.', 90.00],
-            [$this->prestadores[1]->id, $catPintura->id, 'Pintura de Interiores', 'Pintura de paredes e tetos por cômodo.', 350.00],
-            [$this->prestadores[2]->id, $catMarcenaria->id, 'Montagem de Móveis', 'Montagem de guarda-roupas, camas, estantes.', 200.00],
-            [$this->prestadores[2]->id, $catMarcenaria->id, 'Conserto de Portas', 'Ajuste e conserto de portas e gavetas.', 80.00],
-            [$this->prestadores[2]->id, $catLimpeza->id, 'Limpeza Pós-Obra', 'Limpeza completa após reformas.', 250.00],
+            [0, 'Elétrica', 'Instalação de Tomadas', 'Instalação e troca de tomadas e interruptores.', 80.00],
+            [0, 'Elétrica', 'Troca de Disjuntores', 'Substituição de disjuntores com defeito.', 120.00],
+            [0, 'Encanamento', 'Desentupimento de Pia', 'Desentupimento profissional de pias e ralos.', 100.00],
+            [1, 'Encanamento', 'Conserto de Vazamentos', 'Identificação e reparo de vazamentos em tubulações.', 180.00],
+            [1, 'Encanamento', 'Instalação de Torneiras', 'Instalação de torneiras e chuveiros.', 90.00],
+            [1, 'Pintura', 'Pintura de Interiores', 'Pintura de paredes e tetos por cômodo.', 350.00],
+            [2, 'Marcenaria', 'Montagem de Móveis', 'Montagem de guarda-roupas, camas, estantes.', 200.00],
+            [2, 'Marcenaria', 'Conserto de Portas', 'Ajuste e conserto de portas e gavetas.', 80.00],
+            [2, 'Limpeza', 'Limpeza Pós-Obra', 'Limpeza completa após reformas.', 250.00],
+            [2, 'Pequenos Reparos', 'Orçamento no Local', 'Visita para avaliar o serviço e passar o orçamento.', 0.00], // grátis
         ];
 
-        foreach ($servicosData as $data) {
+        foreach ($servicosData as [$prestador, $nomeCategoria, $nome, $descricao, $preco]) {
             $this->servicos[] = Servico::create([
-                'prestador_id' => $data[0], 'categoria_id' => $data[1],
-                'nome' => $data[2], 'descricao' => $data[3],
-                'preco_sugerido' => $data[4], 'status' => 'ativo',
+                'prestador_id' => $this->prestadores[$prestador]->id,
+                'categoria_id' => $categoria($nomeCategoria),
+                'nome' => $nome,
+                'descricao' => $descricao,
+                'preco_sugerido' => $preco,
+                'status' => 'ativo',
             ]);
         }
     }
@@ -122,133 +120,129 @@ class DatabaseSeeder extends Seeder
     private function createClientes(): void
     {
         $clientesData = [
-            ['name' => 'Ana Costa', 'email' => 'ana.costa@email.com', 'phone' => '(11) 95555-4444', 'cpf_cnpj' => '444.555.666-77', 'endereco' => 'Rua dos Pinheiros, 200 - São Paulo/SP', 'nascimento' => '1992-05-18'],
-            ['name' => 'Pedro Almeida', 'email' => 'pedro.almeida@email.com', 'phone' => '(11) 94444-5555', 'cpf_cnpj' => '555.666.777-88', 'endereco' => 'Av. Brigadeiro Faria Lima, 1500 - São Paulo/SP', 'nascimento' => '1988-09-30'],
+            ['name' => 'Ana Costa', 'email' => 'ana.costa@email.com', 'phone' => '(44) 95555-4444', 'cpf' => '444777000', 'nascimento' => '1992-05-18',
+                'endereco' => ['87504000', 'Rua dos Pinheiros', '200', 'Jardim América']],
+            ['name' => 'Pedro Almeida', 'email' => 'pedro.almeida@email.com', 'phone' => '(44) 94444-5555', 'cpf' => '555888111', 'nascimento' => '1988-09-30',
+                'endereco' => ['87505000', 'Avenida Rio Branco', '1500', 'Zona II']],
         ];
+
         foreach ($clientesData as $data) {
-            $user = User::create([
-                'name' => $data['name'], 'email' => $data['email'], 'phone' => $data['phone'],
-                'password' => Hash::make('senha123'), 'role' => 'cliente', 'status' => 'ativo',
-                'cpf_cnpj' => $data['cpf_cnpj'], 'termos_lgpd' => true, 'email_verified_at' => now(),
-            ]);
-            $user->clienteProfile()->create([
-                'endereco_completo' => $data['endereco'], 'data_nascimento' => $data['nascimento'],
-            ]);
-            $this->clientes[] = $user;
+            $this->clientes[] = $this->criarUsuario($data, 'cliente');
         }
+    }
+
+    private function criarUsuario(array $data, string $role): User
+    {
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'password' => 'senha123',
+            'role' => $role,
+            'cpf_cnpj' => self::cpf($data['cpf']),
+            'data_nascimento' => $data['nascimento'],
+            'termos_aceitos_em' => now(),
+            'email_verified_at' => now(),
+        ]);
+
+        [$cep, $logradouro, $numero, $bairro] = $data['endereco'];
+        $user->enderecos()->create([
+            'cep' => $cep, 'logradouro' => $logradouro, 'numero' => $numero, 'bairro' => $bairro,
+            'cidade' => 'Umuarama', 'uf' => 'PR', 'principal' => true,
+        ]);
+
+        AuditLogService::log('usuario_criado', 'users', $user->id, ['role' => $role]);
+
+        return $user;
     }
 
     private function createAgendamentos(): void
     {
         $agendamentosData = [
-            ['cliente_idx' => 0, 'servico_idx' => 0, 'data' => '2 days 10:00', 'endereco' => 'Rua dos Pinheiros, 200', 'status' => 'confirmado'],
-            ['cliente_idx' => 0, 'servico_idx' => 3, 'data' => '5 days 14:00', 'endereco' => 'Rua dos Pinheiros, 200', 'status' => 'pendente'],
-            ['cliente_idx' => 0, 'servico_idx' => 5, 'data' => '-3 days 09:00', 'endereco' => 'Rua dos Pinheiros, 200', 'status' => 'concluido'],
-            ['cliente_idx' => 1, 'servico_idx' => 6, 'data' => '1 days 08:00', 'endereco' => 'Av. Faria Lima, 1500', 'status' => 'confirmado'],
-            ['cliente_idx' => 1, 'servico_idx' => 7, 'data' => '-10 days 15:00', 'endereco' => 'Av. Faria Lima, 1500', 'status' => 'concluido'],
+            // [cliente, serviço, dias a partir de hoje, hora, status]
+            [0, 0, 2, '10:00', 'confirmado'],
+            [0, 3, 5, '14:00', 'pendente'],
+            [0, 5, -3, '09:00', 'concluido'],
+            [1, 6, 1, '08:00', 'confirmado'],
+            [1, 7, -10, '15:00', 'concluido'],
         ];
 
-        foreach ($agendamentosData as $data) {
-            $servico = $this->servicos[$data['servico_idx']];
-            $parts = explode(' ', $data['data']);
-            $days = (int)$parts[0];
-            $timeString = $parts[2];
-            [$hour, $minute] = array_map('intval', explode(':', $timeString));
-
-            if ($days < 0) {
-                $dt = now()->subDays(abs($days))->setTime($hour, $minute);
-            } else {
-                $dt = now()->addDays($days)->setTime($hour, $minute);
-            }
+        foreach ($agendamentosData as [$cliente, $servicoIdx, $dias, $hora, $status]) {
+            $servico = $this->servicos[$servicoIdx];
+            $clienteModel = $this->clientes[$cliente];
+            [$h, $m] = array_map('intval', explode(':', $hora));
 
             $agendamento = Agendamento::create([
-                'cliente_id' => $this->clientes[$data['cliente_idx']]->id,
-                'prestador_id' => $servico->prestador_id,
+                'cliente_id' => $clienteModel->id,
                 'servico_id' => $servico->id,
-                'data_hora' => $dt,
-                'endereco_servico' => $data['endereco'],
-                'status' => $data['status'],
+                'endereco_id' => $clienteModel->enderecoPrincipal->id,
+                'data_hora' => now()->addDays($dias)->setTime($h, $m),
+                'status' => $status,
                 'preco_acordado' => $servico->preco_sugerido,
             ]);
             $this->agendamentos[] = $agendamento;
-            AuditLog::log('agendamento_criado', 'agendamentos', $agendamento->id, ['status' => $data['status']]);
+            AuditLogService::log('agendamento_criado', 'agendamentos', $agendamento->id, ['status' => $status]);
         }
     }
 
     private function createRecebimentos(): void
     {
-        foreach ($this->agendamentos as $agendamento) {
-            if ($agendamento->status === 'concluido') {
-                $valorTotal = $agendamento->preco_acordado;
-                $taxaAdmin = round($valorTotal * 0.10, 2);
-                $valorLiquido = $valorTotal - $taxaAdmin;
-                $liberacao = $agendamento->updated_at->addHours(48);
+        // Mesma taxa configurada pelo administrador (RN7).
+        $percentual = Configuracao::taxaPlataforma();
 
-                $statusRecebimento = $agendamento->id == $this->agendamentos[2]->id ? 'pago' : 'pendente';
-                Recebimento::create([
-                    'agendamento_id' => $agendamento->id,
-                    'valor_total' => $valorTotal, 'taxa_admin' => $taxaAdmin,
-                    'valor_liquido_prestador' => $valorLiquido, 'status_recebimento' => $statusRecebimento,
-                    'data_liberacao' => $liberacao,
-                ]);
-                AuditLog::log('recebimento_criado', 'recebimentos', null, ['agendamento_id' => $agendamento->id]);
+        foreach ($this->agendamentos as $i => $agendamento) {
+            if ($agendamento->status !== 'concluido') {
+                continue;
             }
+
+            $recebimento = Recebimento::create([
+                'agendamento_id' => $agendamento->id,
+                'tipo' => 'servico',
+                'valor_total' => $agendamento->preco_acordado,
+                'percentual_taxa' => $percentual,
+                'status_recebimento' => $i === 2 ? 'pago' : 'pendente',
+                'data_liberacao' => $agendamento->updated_at->addHours(48),
+            ]);
+            AuditLogService::log('recebimento_criado', 'recebimentos', $recebimento->id, ['agendamento_id' => $agendamento->id]);
         }
     }
 
     private function createAvaliacoes(): void
     {
         $avaliacoesData = [
-            ['agendamento_idx' => 2, 'nota' => 5, 'comentario' => 'Excelente trabalho! Maria foi muito profissional, pontual e deixou tudo muito limpo. Recomendo!'],
-            ['agendamento_idx' => 4, 'nota' => 4, 'comentario' => 'Carlos fez um bom trabalho na instalação, chegou no horário combinado.'],
+            [2, 5, 'Excelente trabalho! Maria foi muito profissional, pontual e deixou tudo muito limpo. Recomendo!'],
+            [4, 4, 'Carlos fez um bom trabalho no conserto, chegou no horário combinado.'],
         ];
 
-        foreach ($avaliacoesData as $data) {
-            $agendamento = $this->agendamentos[$data['agendamento_idx']];
-            Avaliacao::create([
-                'agendamento_id' => $agendamento->id,
-                'cliente_id' => $agendamento->cliente_id,
-                'prestador_id' => $agendamento->prestador_id,
-                'nota' => $data['nota'], 'comentario' => $data['comentario'],
-                'data_avaliacao' => now()->subDays(rand(1, 3)),
-                'moderada' => false,
+        foreach ($avaliacoesData as [$idx, $nota, $comentario]) {
+            $avaliacao = Avaliacao::create([
+                'agendamento_id' => $this->agendamentos[$idx]->id,
+                'nota' => $nota,
+                'comentario' => $comentario,
             ]);
-            $this->atualizarReputacao($agendamento->prestador_id);
-            AuditLog::log('avaliacao_criada', 'avaliacoes', null, ['agendamento_id' => $agendamento->id, 'nota' => $data['nota']]);
+            AuditLogService::log('avaliacao_criada', 'avaliacoes', $avaliacao->id, ['nota' => $nota]);
         }
     }
 
     private function createChats(): void
     {
         foreach ($this->agendamentos as $agendamento) {
-            if (in_array($agendamento->status, ['confirmado', 'concluido'])) {
-                $msgs = [
-                    [$agendamento->cliente_id, $agendamento->prestador_id, 'Olá! Tudo bem? Confirmando o agendamento.'],
-                    [$agendamento->prestador_id, $agendamento->cliente_id, 'Olá! Tudo certo, estarei aí no horário.'],
-                    [$agendamento->cliente_id, $agendamento->prestador_id, 'Perfeito, obrigado!'],
-                ];
-                foreach ($msgs as $i => $msg) {
-                    Chat::create([
-                        'agendamento_id' => $agendamento->id,
-                        'remetente_id' => $msg[0], 'destinatario_id' => $msg[1],
-                        'mensagem' => $msg[2],
-                        'data_hora' => $agendamento->created_at->addMinutes($i * 5),
-                        'lido' => true,
-                    ]);
-                }
+            if (!in_array($agendamento->status, ['confirmado', 'concluido'])) {
+                continue;
             }
-        }
-    }
 
-    private function atualizarReputacao(int $prestadorId): void
-    {
-        $media = Avaliacao::where('prestador_id', $prestadorId)->where('moderada', false)->avg('nota');
-        $user = User::find($prestadorId);
-        if ($user && $user->prestadorProfile) {
-            $user->prestadorProfile->update([
-                'reputacao_media' => round($media ?? 5.00, 2),
-                'em_revisao' => ($media !== null && $media < 2.5),
-            ]);
+            $prestadorId = $agendamento->prestador_id;
+            $mensagens = [
+                [$agendamento->cliente_id, 'Olá! Tudo bem? Confirmando o agendamento.'],
+                [$prestadorId, 'Olá! Tudo certo, estarei aí no horário.'],
+                [$agendamento->cliente_id, 'Perfeito, obrigado!'],
+            ];
+
+            foreach ($mensagens as $i => [$remetente, $texto]) {
+                $chat = new Chat(['agendamento_id' => $agendamento->id, 'remetente_id' => $remetente, 'mensagem' => $texto, 'lido' => true]);
+                $chat->created_at = $agendamento->created_at->addMinutes($i * 5);
+                $chat->save();
+            }
         }
     }
 }

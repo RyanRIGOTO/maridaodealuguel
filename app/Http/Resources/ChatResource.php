@@ -15,10 +15,14 @@ class ChatResource extends JsonResource
             'remetente_id' => $this->remetente_id,
             'destinatario_id' => $this->destinatario_id,
             'mensagem' => $this->mensagem,
-            'data_hora' => $this->data_hora,
+            'data_hora' => $this->created_at,
             'lido' => $this->lido,
             'remetente' => new UserResource($this->whenLoaded('remetente')),
-            'destinatario' => new UserResource($this->whenLoaded('destinatario')),
+            'proposta_horario' => $this->whenLoaded('proposta', fn () => $this->proposta ? [
+                'id' => $this->proposta->id,
+                'data_hora' => $this->proposta->data_hora,
+                'status' => $this->proposta->status,
+            ] : null),
         ];
     }
 }

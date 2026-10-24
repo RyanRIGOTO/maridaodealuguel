@@ -41,6 +41,24 @@
                 {{-- Mensagens Flash Globais --}}
                 <x-flash />
 
+                {{-- RN4: cliente com multa não paga fica impedido de agendar --}}
+                @if ($user?->isCliente())
+                    @foreach (\App\Services\PagamentoService::multasPendentes($user->id)->with(['servico', 'cancelamento'])->get() as $multaPendente)
+                        <div class="no-print mb-5 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 flex flex-col sm:flex-row sm:items-center gap-3 shadow-sm">
+                            <i class="ti ti-alert-triangle text-lg shrink-0"></i>
+                            <span class="flex-1">
+                                Você tem uma multa de cancelamento de <strong>R$ {{ number_format($multaPendente->cancelamento->multa, 2, ',', '.') }}</strong>
+                                ({{ $multaPendente->servico->nome ?? 'serviço' }}, {{ $multaPendente->data_hora->format('d/m/Y \à\s H:i') }}).
+                                Novos agendamentos ficam bloqueados até o pagamento.
+                            </span>
+                            <a href="{{ route('cliente.multas.pagar', $multaPendente) }}" class="btn-primary btn-sm shrink-0">
+                                <i class="ti ti-credit-card text-xs"></i>
+                                <span>Pagar multa</span>
+                            </a>
+                        </div>
+                    @endforeach
+                @endif
+
                 {{-- Conteúdo Injetado do Blade --}}
                 {{ $slot }}
             </main>

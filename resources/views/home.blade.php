@@ -69,7 +69,7 @@
             <div class="flex items-center justify-between mb-8">
                 <div>
                     <h2 class="text-2xl font-bold text-ink-900 tracking-tight">Categorias Populares</h2>
-                    <p class="text-sm text-ink-600 mt-1">Selecione uma especialidade para encontrar prestadores disponíveis</p>
+                    <p class="text-sm text-ink-600 mt-1">Algumas de nossas categorias mais procuradas</p>
                 </div>
             </div>
 
@@ -110,7 +110,7 @@
                                         </span>
                                     </div>
                                     <span class="text-brand-600 font-bold text-lg whitespace-nowrap">
-                                        R$ {{ number_format($servico->preco_sugerido, 2, ',', '.') }}
+                                        <x-preco :valor="$servico->preco_sugerido" />
                                     </span>
                                 </div>
                                 <p class="text-sm text-ink-600 mt-3 line-clamp-2 leading-relaxed">{{ $servico->descricao }}</p>

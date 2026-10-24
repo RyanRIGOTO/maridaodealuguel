@@ -16,9 +16,16 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
+        // Na Web a sessão já identifica o usuário; na API o token só é lido pelo
+        // auth:sanctum, por isso lá o middleware 'ativo' entra depois dele (routes/api.php).
+        $middleware->web(append: [
+            \App\Http\Middleware\EnsureUserIsActive::class,
+        ]);
+
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'role.web' => \App\Http\Middleware\EnsureRole::class,
+            'ativo' => \App\Http\Middleware\EnsureUserIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

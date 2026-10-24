@@ -64,16 +64,43 @@ um terminal e `npm run dev` em outro. Depois de editar CSS ou JavaScript, use
 Os relatórios possuem impressão/PDF pelo navegador. O chat envia mensagens por
 formulário; a atualização das mensagens depende do carregamento da página.
 
+## Recuperação de senha
+
+Na tela de login, **Esqueci minha senha** leva ao fluxo em três etapas (`/esqueci-senha`):
+o usuário informa o e-mail, recebe um código de 6 dígitos e define uma nova senha.
+
+- O código vale por 10 minutos, é de uso único e aceita no máximo 5 tentativas.
+- Pedir um código novo invalida o anterior. O código é salvo como hash.
+- A resposta é a mesma exista ou não a conta, para não revelar e-mails cadastrados.
+
+O envio usa o Gmail configurado no `.env` (`SMTP_MAILER` e `SMTP_SENHA`, que é uma
+App Password do Google). Sem esses valores, o e-mail vai para o mailer padrão
+(`MAIL_MAILER=log` grava em `storage/logs/laravel.log`).
+
+## Banco de dados
+
+A estrutura (24/10/2026) segue a 3ª forma normal: cada dado fica num lugar só.
+
+- **Endereços** em campos separados (`enderecos`). O agendamento aponta para o endereço do atendimento.
+- **Prestador do agendamento:** vem do serviço (`servicos.prestador_id`); por isso não fica repetido em `agendamentos`, `avaliacoes` ou `chats`.
+- **Valores calculados** (reputação, taxa e valor líquido do recebimento) não ficam gravados: o sistema calcula na hora.
+- **Cancelamentos** (`cancelamentos`) e **propostas de horário** (`propostas_horario`) têm tabelas próprias.
+- **Histórico protegido:** as chaves estrangeiras do histórico usam `RESTRICT`, então não dá para apagar uma categoria, serviço ou usuário que já tenha agendamentos.
+
+Para criar do zero (apaga tudo!): `php artisan migrate:fresh --seed`.
+
 ## Dados de demonstração
 
 Em um banco destinado à demonstração, execute `php artisan db:seed` para criar
-os exemplos do `DatabaseSeeder`.
+os exemplos do `DatabaseSeeder` e as contas do `ContasTesteSeeder`.
 
 | Papel | E-mail | Senha |
 |---|---|---|
-| Administrador | admin@maridaodealuguel.com.br | senha123 |
+| Administrador | admin@maridaodealuguel.com.br | password123 |
 | Prestador | joao.silva@email.com | senha123 |
 | Cliente | ana.costa@email.com | senha123 |
+| Cliente (teste) | cliente.teste@maridao.test | Teste@123 |
+| Prestador (teste) | prestador.teste@maridao.test | Teste@123 |
 
 ## Verificação
 

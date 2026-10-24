@@ -35,13 +35,15 @@ Route::get('/prestadores/{user}/servicos', [PublicoController::class, 'servicosP
 // Avaliações públicas
 Route::get('/avaliacoes/publicas', [PublicoController::class, 'avaliacoesPublicas']);
 
-// Autenticação (RN1 - público)
-Route::post('/auth/register/cliente', [AuthController::class, 'registerCliente']);
-Route::post('/auth/register/prestador', [AuthController::class, 'registerPrestador']);
-Route::post('/auth/login', [AuthController::class, 'login']);
+// Autenticação (RN1 - público), com limite de tentativas contra força bruta
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('/auth/register/cliente', [AuthController::class, 'registerCliente']);
+    Route::post('/auth/register/prestador', [AuthController::class, 'registerPrestador']);
+    Route::post('/auth/login', [AuthController::class, 'login']);
+});
 
-// Rotas protegidas com Sanctum
-Route::middleware('auth:sanctum')->group(function () {
+// Rotas protegidas com Sanctum; 'ativo' barra tokens de contas inativadas
+Route::middleware(['auth:sanctum', 'ativo'])->group(function () {
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
@@ -59,10 +61,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/agendamentos/verificar-conflito', [AgendamentoController::class, 'verificarConflito']); // RN3
 
     // Serviços do Prestador
-    Route::get('/servicos', [ServicoController::class, 'meusServicos']);
-    Route::post('/servicos', [ServicoController::class, 'store']);
-    Route::put('/servicos/{servico}', [ServicoController::class, 'update']);
-    Route::delete('/servicos/{servico}', [ServicoController::class, 'destroy']);
+    Route::middleware('role:prestador')->group(function () {
+        Route::get('/servicos', [ServicoController::class, 'meusServicos']);
+        Route::post('/servicos', [ServicoController::class, 'store']);
+        Route::put('/servicos/{servico}', [ServicoController::class, 'update']);
+        Route::delete('/servicos/{servico}', [ServicoController::class, 'destroy']);
+    });
 
     // Avaliações
     Route::get('/avaliacoes/pendentes', [AvaliacaoController::class, 'checkPendentes']); // RN8

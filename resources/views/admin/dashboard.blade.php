@@ -43,10 +43,25 @@
                 @forelse ($prestadoresEmRevisao as $prestador)
                     <div class="p-4 bg-amber-50/60 flex items-start gap-3">
                         <i class="ti ti-alert-triangle text-amber-700 text-lg shrink-0 mt-0.5"></i>
-                        <p class="text-xs sm:text-sm text-amber-900">
-                            Prestador <strong>{{ $prestador->name }}</strong> entrou em revisão
-                            (nota média {{ number_format($prestador->prestadorProfile->reputacao_media, 1, ',', '.') }}).
-                        </p>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm text-amber-900">
+                                Prestador <strong>{{ $prestador->name }}</strong> está em revisão
+                                (nota média {{ number_format($prestador->prestadorProfile->reputacao_media, 1, ',', '.') }}
+                                abaixo de 2,5 há 30 dias). Novos agendamentos estão bloqueados.
+                            </p>
+                            {{-- RN10: a revisão termina por decisão do administrador --}}
+                            <form method="POST" action="{{ route('admin.prestadores.revisao', $prestador) }}" class="mt-2 flex flex-col sm:flex-row gap-2"
+                                  onsubmit="return confirm('Concluir a revisão e liberar novos agendamentos para este prestador?');">
+                                @csrf
+                                @method('PATCH')
+                                <input type="text" name="observacao" maxlength="500" class="form-input !py-1.5 text-xs flex-1"
+                                       placeholder="Observação da revisão (opcional)">
+                                <button type="submit" class="btn-sm btn-success shrink-0">
+                                    <i class="ti ti-user-check text-xs"></i>
+                                    <span>Concluir revisão</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 @empty
                 @endforelse

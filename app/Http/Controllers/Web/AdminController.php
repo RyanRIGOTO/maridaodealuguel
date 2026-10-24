@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Categoria;
+use App\Models\Configuracao;
 use App\Models\Recebimento;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\AvaliacaoService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -19,6 +21,9 @@ class AdminController extends Controller
      */
     public function dashboard()
     {
+        // RN10: garante que o alerta apareça mesmo que a rotina diária ainda não tenha rodado.
+        AvaliacaoService::verificarRevisoesPendentes();
+
         $totalClientes = User::where('role', 'cliente')->where('status', 'ativo')->count();
         $totalPrestadores = User::where('role', 'prestador')->where('status', 'ativo')->count();
         $faturamento = Recebimento::sum('valor_total');
@@ -29,9 +34,9 @@ class AdminController extends Controller
             ->with('prestadorProfile')
             ->get();
 
-        $reclamacoesRecentes = Avaliacao::with(['cliente', 'prestador'])
+        $reclamacoesRecentes = Avaliacao::with(['cliente', 'agendamento.servico.prestador'])
             ->where('nota', '<=', 2)
-            ->latest('data_avaliacao')
+            ->latest()
             ->take(5)
             ->get();
 
@@ -46,7 +51,7 @@ class AdminController extends Controller
      */
     public function usuarios(Request $request)
     {
-        $query = User::with(['clienteProfile', 'prestadorProfile']);
+        $query = User::with('prestadorProfile');
 
         if ($request->filled('role') && $request->role !== 'todos') {
             $query->where('role', $request->role);
@@ -62,10 +67,36 @@ class AdminController extends Controller
         return view('admin.usuarios', compact('usuarios'));
     }
 
+    /**
+     * RN10: o administrador conclui a revisão de um prestador e o libera para novos agendamentos.
+     */
+    public function concluirRevisao(Request $request, User $user)
+    {
+        $perfil = $user->prestadorProfile;
+
+        if (!$user->isPrestador() || !$perfil?->em_revisao) {
+            return back()->with('error', 'Este prestador não está em revisão.');
+        }
+
+        $data = $request->validate(['observacao' => ['nullable', 'string', 'max:500']]);
+        AvaliacaoService::concluirRevisao($perfil, $request->user()->id, $data['observacao'] ?? null);
+
+        return back()->with('success', "Revisão de {$user->name} concluída. O prestador voltou a receber agendamentos.");
+    }
+
     public function usuarioStatus(Request $request, User $user)
     {
+        // A tela já mostra administradores como "Protegido"; a rota precisa barrar também.
+        if ($user->isAdmin()) {
+            return back()->with('error', 'Contas de administrador não podem ser inativadas.');
+        }
+
         $novoStatus = $user->status === 'ativo' ? 'inativo' : 'ativo';
         $user->update(['status' => $novoStatus]);
+
+        if ($novoStatus === 'inativo') {
+            $user->tokens()->delete();
+        }
 
         AuditLogService::log(
             $novoStatus === 'ativo' ? 'usuario_ativado' : 'usuario_inativado',
@@ -114,10 +145,67 @@ class AdminController extends Controller
 
     public function categoriasDestroy(Categoria $categoria)
     {
+        // Excluir apagaria em cascata serviços, agendamentos, recebimentos e avaliações.
+        if ($categoria->servicos()->exists()) {
+            return back()->with('error', 'Esta categoria possui serviços vinculados. Inative-a em vez de excluir, para preservar o histórico.');
+        }
+
         AuditLogService::log('categoria_removida', 'categorias', $categoria->id);
         $categoria->delete();
 
         return back()->with('success', 'Categoria removida.');
+    }
+
+    /**
+     * Configurações da plataforma: taxa cobrada sobre cada serviço concluído (RN7).
+     */
+    public function configuracoes()
+    {
+        return view('admin.configuracoes', [
+            'taxa' => Configuracao::taxaPlataforma(),
+            'multa' => Configuracao::multaCancelamento(),
+        ]);
+    }
+
+    public function taxaUpdate(Request $request)
+    {
+        $nova = $this->salvarPercentual($request, 'taxa_plataforma', Configuracao::TAXA_PLATAFORMA, Configuracao::taxaPlataforma());
+
+        return back()->with('success', 'Taxa da plataforma atualizada para '.number_format($nova, 2, ',', '.').'%. Ela vale para os serviços concluídos a partir de agora.');
+    }
+
+    public function multaUpdate(Request $request)
+    {
+        $nova = $this->salvarPercentual($request, 'multa_cancelamento', Configuracao::MULTA_CANCELAMENTO, Configuracao::multaCancelamento());
+
+        return back()->with('success', 'Multa de cancelamento atualizada para '.number_format($nova, 2, ',', '.').'%. Ela vale para os cancelamentos feitos a partir de agora.');
+    }
+
+    /**
+     * Valida um percentual de 0 a 100, grava a configuração e registra na auditoria.
+     */
+    private function salvarPercentual(Request $request, string $campo, string $chave, float $anterior): float
+    {
+        $data = $request->validate([
+            $campo => ['required', 'numeric', 'decimal:0,2', 'min:0', 'max:100'],
+        ], [
+            "{$campo}.required" => 'Informe o percentual.',
+            "{$campo}.numeric" => 'O percentual deve ser um número.',
+            "{$campo}.decimal" => 'Use no máximo duas casas decimais.',
+            "{$campo}.min" => 'O percentual não pode ser negativo.',
+            "{$campo}.max" => 'O percentual não pode passar de 100%.',
+        ]);
+
+        $nova = round((float) $data[$campo], 2);
+        Configuracao::definir($chave, number_format($nova, 2, '.', ''));
+
+        AuditLogService::log("{$chave}_alterada", 'configuracoes', null, [
+            'admin_id' => $request->user()->id,
+            'valor_anterior' => $anterior,
+            'valor_novo' => $nova,
+        ]);
+
+        return $nova;
     }
 
     /**
@@ -132,7 +220,10 @@ class AdminController extends Controller
             'Faturamento Total' => 'R$ '.number_format(Recebimento::sum('valor_total'), 2, ',', '.'),
         ];
 
-        return view('admin.relatorios.index', compact('resumo'));
+        return view('admin.relatorios.index', [
+            'resumo' => $resumo,
+            'taxa' => Configuracao::taxaPlataforma(),
+        ]);
     }
 
     /**
@@ -175,9 +266,9 @@ class AdminController extends Controller
      */
     public function relatorioAvaliacoes(Request $request)
     {
-        $query = Avaliacao::with(['cliente', 'prestador']);
-        $this->aplicarFiltroPeriodo($query, $request, 'data_avaliacao');
-        $avaliacoes = $query->orderBy('data_avaliacao')->get();
+        $query = Avaliacao::with(['cliente', 'agendamento.servico.prestador']);
+        $this->aplicarFiltroPeriodo($query, $request, 'created_at');
+        $avaliacoes = $query->orderBy('created_at')->get();
 
         $porPrestador = $avaliacoes->groupBy('prestador_id')->map(fn ($items) => [
             'prestador' => $items->first()->prestador,
@@ -214,11 +305,16 @@ class AdminController extends Controller
 
     private function aplicarFiltroPeriodo(Builder $query, Request $request, string $coluna): void
     {
-        if ($request->filled('data_inicio')) {
-            $query->whereDate($coluna, '>=', $request->data_inicio);
+        $periodo = $request->validate([
+            'data_inicio' => ['nullable', 'date'],
+            'data_fim' => ['nullable', 'date', 'after_or_equal:data_inicio'],
+        ]);
+
+        if (!empty($periodo['data_inicio'])) {
+            $query->whereDate($coluna, '>=', $periodo['data_inicio']);
         }
-        if ($request->filled('data_fim')) {
-            $query->whereDate($coluna, '<=', $request->data_fim);
+        if (!empty($periodo['data_fim'])) {
+            $query->whereDate($coluna, '<=', $periodo['data_fim']);
         }
     }
 }

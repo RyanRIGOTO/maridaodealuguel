@@ -1,5 +1,5 @@
 <div data-endereco class="space-y-4">
-    <div class="grid sm:grid-cols-3 gap-4">
+    <div class="space-y-4">
         <div>
             <label for="cep" class="form-label">CEP</label>
             <div class="relative">
@@ -10,7 +10,7 @@
             <p data-erro-cep hidden role="status" class="form-error"></p>
             @error('cep') <p class="form-error">{{ $message }}</p> @enderror
         </div>
-        <div class="sm:col-span-2">
+        <div>
             <label for="logradouro" class="form-label">Rua / Logradouro</label>
             <input id="logradouro" type="text" name="logradouro" value="{{ old('logradouro') }}"
                    autocomplete="address-line1" maxlength="75" class="form-input" placeholder="Preencha com sua rua ou logradouro">
@@ -18,14 +18,14 @@
         </div>
     </div>
 
-    <div class="grid sm:grid-cols-3 gap-4">
+    <div class="space-y-4">
         <div>
             <label for="numero" class="form-label">Número</label>
             <input id="numero" type="text" name="numero" value="{{ old('numero') }}"
                    autocomplete="address-line2" maxlength="10" class="form-input" placeholder="Ex: 123">
             @error('numero') <p class="form-error">{{ $message }}</p> @enderror
         </div>
-        <div class="sm:col-span-2">
+        <div>
             <label for="complemento" class="form-label">Complemento</label>
             <input id="complemento" type="text" name="complemento" value="{{ old('complemento') }}"
                    autocomplete="address-line2" maxlength="35" class="form-input" placeholder="Apto, bloco, casa, lote...">
@@ -33,7 +33,7 @@
         </div>
     </div>
 
-    <div class="grid sm:grid-cols-3 gap-4">
+    <div class="space-y-4">
         <div>
             <label for="bairro" class="form-label">Bairro</label>
             <input id="bairro" type="text" name="bairro" value="{{ old('bairro') }}"

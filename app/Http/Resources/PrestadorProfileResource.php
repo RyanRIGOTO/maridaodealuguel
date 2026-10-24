@@ -12,11 +12,13 @@ class PrestadorProfileResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
-            'endereco_completo' => $this->endereco_completo,
-            'data_nascimento' => $this->data_nascimento,
             'area_atuacao' => $this->area_atuacao,
-            'disponibilidade_horarios' => $this->disponibilidade_horarios,
-            'reputacao_media' => $this->reputacao_media,
+            'disponibilidades' => $this->whenLoaded('disponibilidades', fn () => $this->disponibilidades->map(fn ($d) => [
+                'dia_semana' => $d->dia_semana,
+                'hora_inicio' => substr($d->hora_inicio, 0, 5),
+                'hora_fim' => substr($d->hora_fim, 0, 5),
+            ])),
+            'reputacao_media' => $this->reputacao_media, // calculada (RN10)
             'em_revisao' => $this->em_revisao,
         ];
     }

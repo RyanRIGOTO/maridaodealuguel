@@ -14,6 +14,7 @@ class RecebimentoResource extends JsonResource
             'agendamento_id' => $this->agendamento_id,
             'valor_total' => $this->valor_total,
             'taxa_admin' => $this->taxa_admin,
+            'percentual_taxa' => $this->percentual_taxa,
             'valor_liquido_prestador' => $this->valor_liquido_prestador,
             'status_recebimento' => $this->status_recebimento,
             'data_liberacao' => $this->data_liberacao,

@@ -18,8 +18,8 @@ class DocumentoUnico implements ValidationRule
         )->exists();
 
         if ($existe) {
-            // Mesma frase de documento inválido: não confirma se o CPF/CNPJ já existe na base.
-            $fail('Informe um CPF ou CNPJ válido, ou tente outro CPF/CNPJ.');
+            // RN2: não afirma que o documento existe, mas orienta quem já tem conta.
+            $fail('Não foi possível usar este CPF/CNPJ. Se você já tem conta, entre pela tela de login ou use "Esqueci minha senha".');
         }
     }
 }

@@ -58,7 +58,7 @@
                         <div class="flex flex-wrap items-center gap-3 text-xs text-ink-600 mt-2">
                             <span class="inline-flex items-center gap-1"><i class="ti ti-calendar text-xs text-brand-600"></i> {{ $agendamento->data_hora->format('d/m/Y') }}</span>
                             <span class="inline-flex items-center gap-1"><i class="ti ti-clock text-xs text-brand-600"></i> {{ $agendamento->data_hora->format('H:i') }}</span>
-                            <span class="inline-flex items-center gap-1 font-semibold text-brand-700"><i class="ti ti-cash text-xs"></i> R$ {{ number_format($agendamento->preco_acordado, 2, ',', '.') }}</span>
+                            <span class="inline-flex items-center gap-1 font-semibold text-brand-700"><i class="ti ti-cash text-xs"></i> <x-preco :valor="$agendamento->preco_acordado" /></span>
                         </div>
                     </div>
 

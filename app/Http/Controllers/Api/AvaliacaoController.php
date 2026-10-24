@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AvaliacaoResource;
+use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Services\AvaliacaoService;
 use Illuminate\Http\JsonResponse;
@@ -16,10 +17,10 @@ class AvaliacaoController extends Controller
         $query = Avaliacao::with('cliente')->where('moderada', false);
 
         if ($request->filled('prestador_id')) {
-            $query->where('prestador_id', $request->prestador_id);
+            $query->doPrestador($request->integer('prestador_id'));
         }
 
-        $avaliacoes = $query->latest('data_avaliacao')->paginate($request->per_page ?? 20);
+        $avaliacoes = $query->latest()->paginate($this->porPagina($request, 20));
 
         return response()->json([
             'success' => true,
@@ -36,9 +37,9 @@ class AvaliacaoController extends Controller
         ]);
 
         $avaliacao = AvaliacaoService::criar(
-            $data['agendamento_id'],
+            (int) $data['agendamento_id'],
             $request->user()->id,
-            $data['nota'],
+            (int) $data['nota'],
             $data['comentario'] ?? null,
         );
 
@@ -53,7 +54,7 @@ class AvaliacaoController extends Controller
     {
         $user = $request->user();
 
-        $pendentes = \App\Models\Agendamento::with('servico')
+        $pendentes = Agendamento::with('servico')
             ->where('cliente_id', $user->id)
             ->where('status', 'concluido')
             ->whereDoesntHave('avaliacao')

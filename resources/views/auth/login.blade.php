@@ -18,6 +18,7 @@
         <div>
             <div class="flex items-center justify-between mb-1.5">
                 <label for="password" class="form-label !mb-0">Senha</label>
+                <a href="{{ route('password.request') }}" class="text-xs sm:text-sm text-brand-600 font-semibold hover:underline">Esqueci minha senha</a>
             </div>
             <input id="password" type="password" name="password" required
                    class="form-input" placeholder="••••••••">

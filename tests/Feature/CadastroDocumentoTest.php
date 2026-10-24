@@ -3,11 +3,20 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class CadastroDocumentoTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Os testes enviam vários cadastros seguidos; o limite de tentativas tem teste próprio.
+        $this->withoutMiddleware(ThrottleRequests::class);
+    }
+
     public static function rotas(): array
     {
         return [
@@ -75,7 +84,7 @@ class CadastroDocumentoTest extends TestCase
     {
         User::factory()->create(['cpf_cnpj' => $salvo, 'role' => 'prestador']);
         $resposta = $api ? $this->postJson($rota, $this->dados($enviado)) : $this->post($rota, $this->dados($enviado));
-        $mensagem = 'Informe um CPF ou CNPJ válido, ou tente outro CPF/CNPJ.';
+        $mensagem = 'Não foi possível usar este CPF/CNPJ. Se você já tem conta, entre pela tela de login ou use "Esqueci minha senha".';
         if ($api) {
             $resposta->assertUnprocessable()->assertJsonPath('errors.cpf_cnpj.0', $mensagem);
         } else {
@@ -94,5 +103,38 @@ class CadastroDocumentoTest extends TestCase
         }
 
         return $casos;
+    }
+
+    public function test_mensagens_do_cadastro_sao_claras_e_em_portugues(): void
+    {
+        $this->from('/cadastro/cliente')->post('/cadastro/cliente', [
+            'email' => 'sem-arroba',
+            'password' => '123',
+            'password_confirmation' => '999',
+            'cpf_cnpj' => '123',
+            'data_nascimento' => now()->addDay()->toDateString(),
+        ])->assertSessionHasErrors([
+            'name' => 'Informe seu nome completo.',
+            'email' => 'E-mail inválido. Confira se está no formato nome@exemplo.com.',
+            'password' => 'A senha precisa ter pelo menos 8 caracteres.',
+            'cpf_cnpj' => 'CPF ou CNPJ inválido. Confira os números digitados.',
+            'data_nascimento' => 'É preciso ter pelo menos 18 anos para se cadastrar.',
+            'termos_lgpd' => 'Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.',
+        ]);
+    }
+
+    public function test_cadastro_exige_18_anos_completos(): void
+    {
+        $this->withoutMiddleware(ThrottleRequests::class);
+        $dados = fn (string $nascimento) => [...$this->dados('52998224725'), 'data_nascimento' => $nascimento];
+
+        // Nasceu ontem / faz 18 amanhã: recusado.
+        foreach ([now()->subDay(), now()->subYears(18)->addDay()] as $data) {
+            $this->post('/cadastro/cliente', $dados($data->toDateString()))
+                ->assertSessionHasErrors(['data_nascimento' => 'É preciso ter pelo menos 18 anos para se cadastrar.']);
+        }
+
+        // Faz 18 hoje: aceito.
+        $this->post('/cadastro/cliente', $dados(now()->subYears(18)->toDateString()))->assertSessionHasNoErrors();
     }
 }

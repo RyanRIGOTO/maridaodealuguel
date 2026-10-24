@@ -15,15 +15,10 @@ class RecebimentoFactory extends Factory
     public function definition(): array
     {
         $agendamento = \App\Models\Agendamento::factory()->concluido();
-        $valorTotal = fake()->randomFloat(2, 50, 500);
-        $taxaAdmin = round($valorTotal * 0.10, 2);
-        $valorLiquido = $valorTotal - $taxaAdmin;
-
         return [
             'agendamento_id' => $agendamento,
-            'valor_total' => $valorTotal,
-            'taxa_admin' => $taxaAdmin,
-            'valor_liquido_prestador' => $valorLiquido,
+            'valor_total' => fake()->randomFloat(2, 50, 500),
+            'percentual_taxa' => 10.00,
             'status_recebimento' => fake()->randomElement(['pendente', 'pago']),
             'data_liberacao' => now()->addHours(48),
         ];

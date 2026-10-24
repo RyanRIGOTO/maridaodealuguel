@@ -3,16 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\AgendamentoResource;
-use App\Http\Resources\AvaliacaoResource;
 use App\Http\Resources\UserResource;
 use App\Models\Agendamento;
-use App\Models\AuditLog;
-use App\Models\Avaliacao;
 use App\Models\Recebimento;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\AvaliacaoService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,15 +21,15 @@ class AdminController extends Controller
         $totalPrestadores = User::where('role', 'prestador')->where('status', 'ativo')->count();
         $totalAgendamentos = Agendamento::count();
 
-        $faturamentoBruto = Recebimento::sum('valor_total');
-        $taxaPlataforma = Recebimento::sum('taxa_admin');
-        $faturamentoLiquido = Recebimento::where('status_recebimento', 'pago')->sum('valor_liquido_prestador');
-        $pendenteLiberacao = Recebimento::where('status_recebimento', 'pendente')->sum('valor_total');
+        $faturamentoBruto = (float) Recebimento::sum('valor_total');
+        $taxaPlataforma = (float) Recebimento::sum(DB::raw(Recebimento::SQL_TAXA));
+        $faturamentoLiquido = (float) Recebimento::where('status_recebimento', 'pago')->sum(DB::raw(Recebimento::SQL_LIQUIDO));
+        $pendenteLiberacao = (float) Recebimento::where('status_recebimento', 'pendente')->sum('valor_total');
 
-        $prestadoresBaixaNota = User::where('role', 'prestador')
-            ->whereHas('prestadorProfile', fn($q) => $q->where('reputacao_media', '<', 2.5))
-            ->with('prestadorProfile')
-            ->get();
+        // A reputação é calculada (não gravada): médias de todos numa consulta só.
+        $prestadores = User::where('role', 'prestador')->get(['id', 'name']);
+        $medias = AvaliacaoService::medias($prestadores->pluck('id')->all());
+        $prestadoresBaixaNota = $prestadores->filter(fn ($u) => ($medias[$u->id] ?? 5) < AvaliacaoService::NOTA_MINIMA)->values();
 
         $emRevisao = User::where('role', 'prestador')
             ->whereHas('prestadorProfile', fn($q) => $q->where('em_revisao', true))
@@ -57,7 +54,7 @@ class AdminController extends Controller
                     'prestadores_baixa_nota' => $prestadoresBaixaNota->map(fn($u) => [
                         'id' => $u->id,
                         'name' => $u->name,
-                        'reputacao_media' => $u->prestadorProfile->reputacao_media,
+                        'reputacao_media' => $medias[$u->id],
                     ]),
                 ],
             ],
@@ -66,7 +63,7 @@ class AdminController extends Controller
 
     public function usuarios(Request $request): JsonResponse
     {
-        $query = User::with(['clienteProfile', 'prestadorProfile']);
+        $query = User::with(['enderecoPrincipal', 'prestadorProfile']);
 
         if ($request->filled('role')) {
             $query->where('role', $request->role);
@@ -80,7 +77,7 @@ class AdminController extends Controller
                 ->orWhere('email', 'like', "%{$term}%"));
         }
 
-        $usuarios = $query->latest()->paginate($request->per_page ?? 20);
+        $usuarios = $query->latest()->paginate($this->porPagina($request, 20));
 
         return response()->json([
             'success' => true,
@@ -88,16 +85,28 @@ class AdminController extends Controller
         ]);
     }
 
-    public function toggleUserStatus(User $user): JsonResponse
+    public function toggleUserStatus(Request $request, User $user): JsonResponse
     {
+        // Contas de administrador são protegidas, como na tela Web (evita o admin se trancar fora).
+        if ($user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'FORBIDDEN', 'message' => 'Contas de administrador não podem ser inativadas por aqui.'],
+            ], 403);
+        }
+
         $novoStatus = $user->status === 'ativo' ? 'inativo' : 'ativo';
         $user->update(['status' => $novoStatus]);
+
+        if ($novoStatus === 'inativo') {
+            $user->tokens()->delete();
+        }
 
         AuditLogService::log(
             $novoStatus === 'ativo' ? 'usuario_ativado' : 'usuario_inativado',
             'users',
             $user->id,
-            ['status' => $novoStatus, 'admin_id' => request()->user()->id]
+            ['status' => $novoStatus, 'admin_id' => $request->user()->id]
         );
 
         return response()->json([

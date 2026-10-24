@@ -73,6 +73,10 @@ export function iniciarInterface() {
         mostrarMenu(false);
     }
 
-    const mensagens = document.getElementById('thread-mensagens');
-    if (mensagens) mensagens.scrollTop = mensagens.scrollHeight;
+    // Formulários que pedem confirmação com um texto vindo do servidor (ex.: aviso de multa).
+    document.querySelectorAll('form[data-confirmar]').forEach((formulario) => {
+        formulario.addEventListener('submit', (evento) => {
+            if (!window.confirm(formulario.dataset.confirmar)) evento.preventDefault();
+        });
+    });
 }

@@ -13,14 +13,14 @@ class PageController extends Controller
      */
     public function home()
     {
+        // Conta só os serviços que o visitante consegue de fato contratar.
         $categorias = Categoria::where('status', 'ativo')
-            ->withCount('servicos')
+            ->withCount(['servicos' => fn ($q) => $q->contratavel()])
             ->orderBy('nome_categoria')
             ->get();
 
         $servicos = Servico::with(['categoria', 'prestador.prestadorProfile'])
-            ->where('status', 'ativo')
-            ->whereHas('prestador', fn ($q) => $q->where('status', 'ativo'))
+            ->contratavel()
             ->latest()
             ->take(6)
             ->get();

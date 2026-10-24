@@ -1,38 +1,18 @@
-<x-app-layout title="Relatório dos Meus Serviços" subtitle="Acompanhe atendimentos, repasses e avaliações por serviço">
-    <div class="no-print mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <form method="GET" class="flex flex-wrap items-center gap-2">
-            <input type="date" name="data_inicio" value="{{ $periodo['data_inicio'] ?? '' }}" class="form-input !py-1.5 text-xs sm:text-sm !w-auto" aria-label="Data inicial">
-            <span class="text-ink-600 text-xs sm:text-sm">até</span>
-            <input type="date" name="data_fim" value="{{ $periodo['data_fim'] ?? '' }}" class="form-input !py-1.5 text-xs sm:text-sm !w-auto" aria-label="Data final">
-            <button type="submit" class="btn-secondary btn-sm">
-                <i class="ti ti-filter text-sm"></i>
-                <span>Filtrar</span>
-            </button>
-        </form>
-        <button type="button" onclick="window.print()" class="btn-primary btn-sm">
-            <i class="ti ti-printer text-sm"></i>
-            <span>Imprimir / PDF</span>
-        </button>
-    </div>
-
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 mb-8">
+{{-- Mesmo modelo dos relatórios do admin: filtro, impressão e cabeçalho com logo e emissão. --}}
+<x-report-layout titulo="Relatório dos Meus Serviços" :periodo="$periodo" :voltar="false">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 mb-6">
         <x-stat-card label="Serviços cadastrados" :value="$resumo['servicos']" icon="ti-briefcase" color="brand" />
         <x-stat-card label="Atendimentos concluídos" :value="$resumo['concluidos']" icon="ti-circle-check" color="emerald" />
         <x-stat-card label="Repasse líquido previsto" value="R$ {{ number_format($resumo['valor_liquido'], 2, ',', '.') }}" icon="ti-cash" color="brand" />
         <x-stat-card label="Avaliação média" :value="$resumo['media_avaliacoes'] !== null ? number_format($resumo['media_avaliacoes'], 1, ',', '.') : '—'" icon="ti-star-filled" color="amber" />
     </div>
 
-    <div class="card p-5 sm:p-7 print-area bg-white border border-ink-300 overflow-x-auto">
-        <div class="border-b border-ink-200 pb-4 mb-5 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-            <div>
-                <p class="font-bold text-ink-900 text-base">Desempenho por serviço</p>
-                <p class="text-xs text-ink-600 mt-1">Os valores consideram somente atendimentos concluídos no período.</p>
-            </div>
-            @if (!empty($periodo['data_inicio']) || !empty($periodo['data_fim']))
-                <p class="text-xs text-ink-600 font-medium">Período: {{ $periodo['data_inicio'] ?? 'início' }} até {{ $periodo['data_fim'] ?? 'hoje' }}</p>
-            @endif
-        </div>
+    <div class="mb-4">
+        <p class="font-bold text-ink-900 text-base">Desempenho por serviço</p>
+        <p class="text-xs text-ink-600 mt-1">Os valores consideram somente atendimentos concluídos no período.</p>
+    </div>
 
+    <div class="overflow-x-auto">
         <table class="table-app min-w-[760px]">
             <thead>
                 <tr>
@@ -74,4 +54,4 @@
             </tbody>
         </table>
     </div>
-</x-app-layout>
+</x-report-layout>

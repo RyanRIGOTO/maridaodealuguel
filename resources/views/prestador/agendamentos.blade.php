@@ -28,10 +28,10 @@
                     <div class="flex flex-wrap items-center gap-3 text-xs text-ink-600 mt-2">
                         <span class="inline-flex items-center gap-1"><i class="ti ti-calendar text-xs text-brand-600"></i> {{ $agendamento->data_hora->format('d/m/Y') }}</span>
                         <span class="inline-flex items-center gap-1"><i class="ti ti-clock text-xs text-brand-600"></i> {{ $agendamento->data_hora->format('H:i') }}</span>
-                        <span class="inline-flex items-center gap-1 font-bold text-brand-600"><i class="ti ti-cash text-xs"></i> R$ {{ number_format($agendamento->preco_acordado, 2, ',', '.') }}</span>
-                        <span class="inline-flex items-center gap-1 truncate max-w-xs" title="{{ $agendamento->endereco_servico }}">
+                        <span class="inline-flex items-center gap-1 font-bold text-brand-600"><i class="ti ti-cash text-xs"></i> <x-preco :valor="$agendamento->preco_acordado" /></span>
+                        <span class="inline-flex items-center gap-1 truncate max-w-xs" title="{{ $agendamento->endereco?->completo }}">
                             <i class="ti ti-map-pin text-xs text-brand-600"></i>
-                            <span>{{ $agendamento->endereco_servico }}</span>
+                            <span>{{ $agendamento->endereco?->completo }}</span>
                         </span>
                     </div>
                 </div>
@@ -71,11 +71,37 @@
                             </button>
                         </form>
                     @endif
+                    @if (in_array($agendamento->status, ['pendente', 'confirmado']))
+                        <button type="button" class="btn-secondary btn-sm" data-alternar="propor-{{ $agendamento->id }}"
+                                aria-controls="propor-{{ $agendamento->id }}" aria-expanded="false" title="Propor outro horário ao cliente">
+                            <i class="ti ti-calendar-time text-sm"></i>
+                            <span>Outro horário</span>
+                        </button>
+                    @endif
                     <a href="{{ route('chat.index', ['agendamento' => $agendamento->id]) }}" class="btn-secondary btn-sm" title="Conversar com o cliente">
                         <i class="ti ti-message-circle text-sm"></i>
                     </a>
                 </div>
             </div>
+            @if (in_array($agendamento->status, ['pendente', 'confirmado']))
+                {{-- Negociação: a proposta vai para o chat e o cliente aceita ou recusa --}}
+                <form id="propor-{{ $agendamento->id }}" hidden method="POST" action="{{ route('prestador.agendamentos.propor-horario', $agendamento) }}"
+                      class="px-4 sm:px-5 pb-4 flex flex-col sm:flex-row sm:items-end gap-3">
+                    @csrf
+                    <div>
+                        <label for="propor-data-{{ $agendamento->id }}" class="form-label text-xs">Nova data</label>
+                        <input id="propor-data-{{ $agendamento->id }}" type="date" name="data" required min="{{ now()->toDateString() }}" class="form-input !py-1.5 text-sm">
+                    </div>
+                    <div>
+                        <label for="propor-hora-{{ $agendamento->id }}" class="form-label text-xs">Novo horário</label>
+                        <input id="propor-hora-{{ $agendamento->id }}" type="time" name="hora" required step="900" class="form-input !py-1.5 text-sm">
+                    </div>
+                    <button type="submit" class="btn-primary btn-sm">
+                        <i class="ti ti-send text-xs"></i>
+                        <span>Enviar proposta pelo chat</span>
+                    </button>
+                </form>
+            @endif
         @empty
             <div class="p-12 text-center text-ink-600">
                 <div class="w-12 h-12 rounded-full bg-ink-100 flex items-center justify-center mx-auto mb-3">

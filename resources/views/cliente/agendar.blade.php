@@ -27,26 +27,47 @@
                 {{-- Etapa 1: categoria e serviço. Os dados pessoais do prestador não são enviados ao HTML. --}}
                 <section data-etapa="1" class="card p-6 bg-white shadow-sm">
                     <h2 tabindex="-1" class="font-bold text-ink-900 text-lg mb-4">1. Selecione a Categoria e o Serviço</h2>
-                    <p class="form-label">Categorias</p>
+                    <label for="busca-categoria" class="form-label">Categorias</label>
+                    <div class="relative mb-3">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-400">
+                            <i class="ti ti-search text-base"></i>
+                        </div>
+                        <input id="busca-categoria" type="search" data-busca-categoria autocomplete="off"
+                               class="form-input !pl-10" placeholder="Pesquisar categoria pelo nome...">
+                    </div>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6">
                         @foreach ($categorias as $categoria)
-                            <button type="button" data-categoria="{{ $categoria->id }}" aria-pressed="false"
-                                    class="opcao-agendamento px-3 py-2.5 text-xs sm:text-sm text-center">
+                            <button type="button" data-categoria="{{ $categoria->id }}" data-nome-categoria="{{ $categoria->nome_categoria }}"
+                                    aria-pressed="false" class="opcao-agendamento px-3 py-2.5 text-xs sm:text-sm text-center">
                                 {{ $categoria->nome_categoria }}
                             </button>
                         @endforeach
                     </div>
+                    <p data-categoria-nao-encontrada hidden class="text-sm text-ink-600 mb-6">Nenhuma categoria encontrada com esse nome.</p>
 
                     @foreach ($categorias as $categoria)
                         <div data-lista-servicos="{{ $categoria->id }}" hidden>
                             <p class="form-label">Serviços Disponíveis</p>
+                            @if ($categoria->servicos->isEmpty())
+                                <p class="p-4 rounded-lg border border-dashed border-ink-300 text-sm text-ink-600 text-center">
+                                    Nenhum serviço disponível nesta categoria no momento.
+                                </p>
+                            @else
+                                <div class="relative mb-3">
+                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-400">
+                                        <i class="ti ti-search text-base"></i>
+                                    </div>
+                                    <input type="search" data-busca-servico autocomplete="off" aria-label="Pesquisar serviço em {{ $categoria->nome_categoria }}"
+                                           class="form-input !pl-10" placeholder="Pesquisar serviço ou profissional...">
+                                </div>
+                            @endif
                             <div class="space-y-2.5">
                                 @foreach ($categoria->servicos as $servico)
                                     <button type="button" data-servico="{{ $servico->id }}"
                                             data-nome="{{ $servico->nome }}"
                                             data-preco="{{ $servico->preco_sugerido }}"
                                             data-profissional="{{ $servico->prestador->name }}"
-                                            data-reputacao="{{ $servico->prestador->prestadorProfile?->reputacao_media ?? 5 }}"
+                                            data-reputacao="{{ $reputacoes[$servico->prestador_id] ?? 5 }}"
                                             data-area="{{ $servico->prestador->prestadorProfile?->area_atuacao }}"
                                             data-descricao="{{ $servico->descricao }}"
                                             aria-pressed="false"
@@ -55,10 +76,11 @@
                                             <span class="block font-bold text-sm">{{ $servico->nome }}</span>
                                             <span class="block text-xs mt-0.5">Profissional: {{ $servico->prestador->name }}</span>
                                         </span>
-                                        <span class="font-bold text-base whitespace-nowrap">R$ {{ number_format($servico->preco_sugerido, 2, ',', '.') }}</span>
+                                        <span class="font-bold text-base whitespace-nowrap"><x-preco :valor="$servico->preco_sugerido" /></span>
                                     </button>
                                 @endforeach
                             </div>
+                            <p data-servicos-info hidden class="text-xs text-ink-600 mt-2.5" aria-live="polite"></p>
                         </div>
                     @endforeach
 
@@ -108,11 +130,25 @@
                                             class="opcao-agendamento px-2.5 py-2 text-xs sm:text-sm">{{ $hora }}</button>
                                 @endforeach
                             </div>
+                            <p data-sem-horario hidden class="text-xs text-amber-800 mt-2">Não há mais horários disponíveis hoje. Escolha outra data.</p>
                         </div>
                         <div>
-                            <label class="form-label" for="agendamento-endereco">Endereço do Local de Atendimento</label>
-                            <textarea id="agendamento-endereco" name="endereco_servico" rows="2" maxlength="255" required class="form-input"
-                                      placeholder="Rua, número, complemento, bairro, cidade - UF">{{ old('endereco_servico') }}</textarea>
+                            <p class="form-label">Endereço do Local de Atendimento</p>
+                            {{-- cadastro = endereço principal do cliente; outro = endereço novo em campos separados --}}
+                            <input type="hidden" name="endereco_opcao" value="{{ old('endereco_opcao', $enderecoCadastro ? 'cadastro' : 'outro') }}">
+                            @if ($enderecoCadastro)
+                                <input type="hidden" name="endereco_id" value="{{ $enderecoCadastro->id }}">
+                                <div class="flex flex-wrap gap-2 mb-2" role="group" aria-label="Onde será o atendimento">
+                                    <button type="button" data-endereco-opcao="cadastro" aria-pressed="false"
+                                            class="opcao-agendamento px-3 py-2 text-xs sm:text-sm"><i class="ti ti-home"></i> No meu endereço</button>
+                                    <button type="button" data-endereco-opcao="outro" aria-pressed="false"
+                                            class="opcao-agendamento px-3 py-2 text-xs sm:text-sm"><i class="ti ti-map-pin"></i> Em outro endereço</button>
+                                </div>
+                                <p data-endereco-cadastro class="form-input bg-ink-50 text-ink-700 text-sm">{{ $enderecoCadastro->completo }}</p>
+                            @endif
+                            <div data-endereco-novo class="mt-2">
+                                <x-address-fields />
+                            </div>
                         </div>
                     </div>
                     <div class="mt-8 flex justify-between">
@@ -132,6 +168,14 @@
                         <div class="py-3 flex justify-between items-center gap-4"><dt class="font-bold">Valor Total Estimado</dt><dd data-resumo="preco" class="font-extrabold text-brand-600 text-xl"></dd></div>
                     </dl>
                     <p class="mt-4 p-3 bg-brand-50 border border-brand-200 rounded-lg text-xs text-brand-800">Após confirmar, o pedido ficará como <strong>"Pendente"</strong> até a confirmação do prestador de serviços.</p>
+                    @if ($multa > 0)
+                        {{-- RN4: política de cancelamento informada antes da contratação --}}
+                        <p class="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
+                            <i class="ti ti-alert-triangle"></i>
+                            Cancelamentos feitos com menos de 24h de antecedência têm multa de
+                            <strong>{{ number_format($multa, 2, ',', '.') }}%</strong> do valor do serviço, repassada ao prestador.
+                        </p>
+                    @endif
                     <div class="mt-8 flex justify-between">
                         <button type="button" data-ir-etapa="3" class="btn-secondary"><i class="ti ti-arrow-left"></i> Voltar</button>
                         <button type="submit" class="btn-primary"><i class="ti ti-check"></i> Confirmar Agendamento</button>

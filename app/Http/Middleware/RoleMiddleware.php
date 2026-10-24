@@ -15,7 +15,7 @@ class RoleMiddleware
                 'success' => false,
                 'error' => [
                     'code' => 'FORBIDDEN',
-                    'message' => 'Acesso negado. Permissão de administrador necessária.',
+                    'message' => 'Acesso negado para o seu tipo de usuário.',
                 ],
             ], 403);
         }

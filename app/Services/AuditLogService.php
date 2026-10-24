@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
-use Illuminate\Http\Request;
 
 class AuditLogService
 {
@@ -46,6 +45,6 @@ class AuditLogService
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 
-        return $query->orderBy('created_at', 'desc')->paginate($filters['per_page'] ?? 50);
+        return $query->orderBy('created_at', 'desc')->paginate(min(max((int) ($filters['per_page'] ?? 50), 1), 100));
     }
 }

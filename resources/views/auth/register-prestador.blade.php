@@ -20,7 +20,7 @@
                    class="form-input" placeholder="Seu nome completo">
         </div>
 
-        <div class="grid sm:grid-cols-2 gap-4">
+        <div class="space-y-4">
             <div>
                 <label for="email" class="form-label">E-mail Profissional <span class="text-rose-500">*</span></label>
                 <input id="email" type="email" name="email" value="{{ old('email') }}" required maxlength="100"
@@ -33,7 +33,7 @@
             </div>
         </div>
 
-        <div class="grid sm:grid-cols-2 gap-4">
+        <div class="space-y-4">
             <div>
                 <label for="cpf_cnpj" class="form-label">CPF ou CNPJ <span class="text-rose-500">*</span></label>
                 <input id="cpf_cnpj" type="text" name="cpf_cnpj" value="{{ old('cpf_cnpj') }}" required maxlength="18" autocapitalize="characters" spellcheck="false"
@@ -42,6 +42,7 @@
             <div>
                 <label for="data_nascimento" class="form-label">Data de Nascimento <span class="text-rose-500">*</span></label>
                 <input id="data_nascimento" type="date" name="data_nascimento" value="{{ old('data_nascimento') }}" required
+                       min="1900-01-02" max="{{ now()->subYears(18)->toDateString() }}"
                        class="form-input">
             </div>
         </div>
@@ -64,7 +65,7 @@
             <div class="flex flex-wrap gap-2 pt-1">
                 @foreach (['seg' => 'Segunda', 'ter' => 'Terça', 'qua' => 'Quarta', 'qui' => 'Quinta', 'sex' => 'Sexta', 'sab' => 'Sábado', 'dom' => 'Domingo'] as $codigo => $label)
                     <label class="cursor-pointer">
-                        <input type="checkbox" name="disponibilidade_horarios[]" value="{{ $codigo }}" class="peer sr-only">
+                        <input type="checkbox" name="dias_disponiveis[]" value="{{ $codigo }}" class="peer sr-only">
                         <span class="inline-block px-3 py-1.5 rounded-lg border border-ink-300 bg-white text-xs font-semibold text-ink-700 peer-checked:bg-brand-500 peer-checked:text-white peer-checked:border-brand-500 hover:border-brand-300 transition-all shadow-sm">
                             {{ $label }}
                         </span>
@@ -73,7 +74,7 @@
             </div>
         </div>
 
-        <div class="grid sm:grid-cols-2 gap-4">
+        <div class="space-y-4">
             <div>
                 <label for="password" class="form-label">Senha de Acesso <span class="text-rose-500">*</span></label>
                 <input id="password" type="password" name="password" required minlength="8"

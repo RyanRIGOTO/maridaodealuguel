@@ -8,6 +8,7 @@ use App\Http\Requests\RegisterClienteRequest;
 use App\Http\Requests\RegisterPrestadorRequest;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\CadastroService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -30,12 +31,9 @@ class AuthController extends Controller
     {
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        // Mesma mensagem para e-mail inexistente, senha errada e conta inativa: não revela qual falhou.
+        if (!$user || !Hash::check($request->password, $user->password) || !$user->isActive()) {
             return back()->withErrors(['email' => 'Credenciais inválidas.'])->onlyInput('email');
-        }
-
-        if (!$user->isActive()) {
-            return back()->withErrors(['email' => 'Conta inativa. Entre em contato com o suporte.'])->onlyInput('email');
         }
 
         Auth::login($user, $request->boolean('lembrar'));
@@ -73,22 +71,7 @@ class AuthController extends Controller
 
     public function registerCliente(RegisterClienteRequest $request)
     {
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'password' => Hash::make($request->password),
-            'role' => 'cliente',
-            'cpf_cnpj' => $request->cpf_cnpj,
-            'termos_lgpd' => true,
-        ]);
-
-        $user->clienteProfile()->create([
-            'endereco_completo' => $request->endereco_completo,
-            'data_nascimento' => $request->data_nascimento,
-        ]);
-
-        AuditLogService::log('usuario_criado', 'users', $user->id, ['role' => 'cliente']);
+        $user = CadastroService::cadastrar($request->validated(), 'cliente');
 
         Auth::login($user);
         $request->session()->regenerate();
@@ -111,26 +94,7 @@ class AuthController extends Controller
 
     public function registerPrestador(RegisterPrestadorRequest $request)
     {
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'password' => Hash::make($request->password),
-            'role' => 'prestador',
-            'cpf_cnpj' => $request->cpf_cnpj,
-            'termos_lgpd' => true,
-        ]);
-
-        $user->prestadorProfile()->create([
-            'endereco_completo' => $request->endereco_completo,
-            'data_nascimento' => $request->data_nascimento,
-            'area_atuacao' => $request->area_atuacao,
-            'disponibilidade_horarios' => $request->disponibilidade_horarios,
-            'reputacao_media' => 5.00,
-            'em_revisao' => false,
-        ]);
-
-        AuditLogService::log('usuario_criado', 'users', $user->id, ['role' => 'prestador']);
+        $user = CadastroService::cadastrar($request->validated(), 'prestador');
 
         Auth::login($user);
         $request->session()->regenerate();

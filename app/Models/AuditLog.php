@@ -20,17 +20,4 @@ class AuditLog extends Model
     {
         return $this->belongsTo(User::class, 'usuario_id');
     }
-
-    public static function log(string $acao, string $entidade, ?int $entidadeId = null, ?array $detalhes = null, ?int $usuarioId = null): self
-    {
-        return static::create([
-            'usuario_id' => $usuarioId ?? auth()->id(),
-            'acao' => $acao,
-            'entidade' => $entidade,
-            'entidade_id' => $entidadeId,
-            'ip_address' => request()->ip(),
-            'detalhes' => $detalhes,
-            'created_at' => now(),
-        ]);
-    }
 }

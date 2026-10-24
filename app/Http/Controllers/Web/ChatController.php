@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
 use App\Models\Chat;
+use App\Models\PropostaHorario;
+use App\Services\AgendamentoService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class ChatController extends Controller
 {
@@ -17,22 +20,23 @@ class ChatController extends Controller
     {
         $user = $request->user();
 
-        $agendamentosComChat = Agendamento::where(function ($q) use ($user) {
-            $q->where('cliente_id', $user->id)->orWhere('prestador_id', $user->id);
-        })->whereHas('chat')->with(['cliente', 'prestador', 'servico'])->get();
+        // Não lidas = mensagens da outra parte (o destinatário não é gravado: é quem não enviou).
+        $agendamentosComChat = Agendamento::doParticipante($user->id)
+            ->whereHas('chat')
+            ->with(['cliente', 'prestador', 'servico'])
+            ->withCount(['chat as nao_lidas' => fn ($q) => $q->where('remetente_id', '!=', $user->id)->where('lido', false)])
+            ->get();
 
         $conversas = $agendamentosComChat->map(function ($agendamento) use ($user) {
-            $ultimaMensagem = $agendamento->chat()->latest('data_hora')->first();
-            $naoLidas = $agendamento->chat()->where('destinatario_id', $user->id)->where('lido', false)->count();
-            $outroUsuario = $agendamento->cliente_id === $user->id ? $agendamento->prestador : $agendamento->cliente;
+            $ultimaMensagem = $agendamento->chat()->latest('created_at')->latest('id')->first();
 
             return (object) [
                 'agendamento_id' => $agendamento->id,
-                'outro_usuario' => $outroUsuario,
+                'outro_usuario' => $agendamento->cliente_id === $user->id ? $agendamento->prestador : $agendamento->cliente,
                 'servico_nome' => $agendamento->servico?->nome,
                 'ultima_mensagem' => $ultimaMensagem?->mensagem,
-                'ultima_mensagem_data' => $ultimaMensagem?->data_hora,
-                'nao_lidas' => $naoLidas,
+                'ultima_mensagem_data' => $ultimaMensagem?->created_at,
+                'nao_lidas' => $agendamento->nao_lidas,
             ];
         })->sortByDesc('ultima_mensagem_data')->values();
 
@@ -41,19 +45,21 @@ class ChatController extends Controller
         $outro = null;
 
         if ($request->filled('agendamento')) {
-            $candidato = Agendamento::with(['cliente', 'prestador'])->find($request->query('agendamento'));
+            $candidato = Agendamento::with(['cliente', 'prestador', 'servico'])->find($request->query('agendamento'));
 
-            if ($candidato && ($candidato->cliente_id === $user->id || $candidato->prestador_id === $user->id)) {
+            if ($candidato && $candidato->participa($user->id)) {
                 $agendamentoAtivo = $candidato;
                 $outro = $candidato->cliente_id === $user->id ? $candidato->prestador : $candidato->cliente;
 
                 Chat::where('agendamento_id', $candidato->id)
-                    ->where('destinatario_id', $user->id)
+                    ->where('remetente_id', '!=', $user->id)
                     ->where('lido', false)
                     ->update(['lido' => true]);
 
-                $mensagens = Chat::where('agendamento_id', $candidato->id)
-                    ->orderBy('data_hora')
+                $mensagens = Chat::with('proposta')
+                    ->where('agendamento_id', $candidato->id)
+                    ->orderBy('created_at')
+                    ->orderBy('id')
                     ->get();
             }
         }
@@ -65,25 +71,35 @@ class ChatController extends Controller
     {
         $user = $request->user();
 
-        if ($agendamento->cliente_id !== $user->id && $agendamento->prestador_id !== $user->id) {
+        if (!$agendamento->participa($user->id)) {
             abort(403);
         }
 
         $data = $request->validate(['mensagem' => 'required|string|max:2000']);
 
-        $destinatarioId = $agendamento->cliente_id === $user->id
-            ? $agendamento->prestador_id
-            : $agendamento->cliente_id;
-
         Chat::create([
             'agendamento_id' => $agendamento->id,
             'remetente_id' => $user->id,
-            'destinatario_id' => $destinatarioId,
             'mensagem' => $data['mensagem'],
-            'data_hora' => now(),
-            'lido' => false,
         ]);
 
         return redirect()->route('chat.index', ['agendamento' => $agendamento->id]);
+    }
+
+    /**
+     * Cliente aceita ou recusa a proposta de novo horário enviada pelo prestador.
+     */
+    public function responderProposta(Request $request, PropostaHorario $proposta)
+    {
+        $data = $request->validate(['resposta' => ['required', 'in:aceitar,recusar']]);
+
+        try {
+            AgendamentoService::responderProposta($proposta, $request->user()->id, $data['resposta'] === 'aceitar');
+        } catch (ValidationException $e) {
+            return back()->with('error', collect($e->errors())->collapse()->first());
+        }
+
+        return redirect()->route('chat.index', ['agendamento' => $proposta->agendamento_id])
+            ->with('success', $data['resposta'] === 'aceitar' ? 'Novo horário confirmado.' : 'Proposta recusada.');
     }
 }

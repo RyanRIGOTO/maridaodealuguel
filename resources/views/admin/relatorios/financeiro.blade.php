@@ -4,10 +4,11 @@
             <tr>
                 <th>Data</th>
                 <th>Serviço</th>
+                <th>Tipo</th>
                 <th>Prestador</th>
                 <th class="text-right">Valor Total</th>
-                <th class="text-right">Taxa Plataforma (10%)</th>
-                <th class="text-right">Repasse Prestador (90%)</th>
+                <th class="text-right">Taxa Plataforma</th>
+                <th class="text-right">Repasse Prestador</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -16,14 +17,20 @@
                 <tr>
                     <td class="text-ink-600 font-mono text-xs">{{ $recebimento->created_at->format('d/m/Y') }}</td>
                     <td class="font-bold text-ink-900">{{ $recebimento->agendamento->servico->nome ?? '—' }}</td>
+                    <td class="text-xs">{{ $recebimento->tipo === 'multa' ? 'Multa de cancelamento' : 'Serviço' }}</td>
                     <td class="text-ink-800">{{ $recebimento->agendamento->prestador->name ?? '—' }}</td>
                     <td class="text-right font-bold text-ink-900">R$ {{ number_format($recebimento->valor_total, 2, ',', '.') }}</td>
-                    <td class="text-right font-semibold text-brand-600">R$ {{ number_format($recebimento->taxa_admin, 2, ',', '.') }}</td>
+                    <td class="text-right font-semibold text-brand-600">
+                        R$ {{ number_format($recebimento->taxa_admin, 2, ',', '.') }}
+                        @if ($recebimento->percentual_taxa !== null)
+                            <span class="block text-[10px] font-normal text-ink-500">{{ number_format($recebimento->percentual_taxa, 2, ',', '.') }}%</span>
+                        @endif
+                    </td>
                     <td class="text-right font-semibold text-emerald-700">R$ {{ number_format($recebimento->valor_liquido_prestador, 2, ',', '.') }}</td>
                     <td><x-status-badge :status="$recebimento->status_recebimento" /></td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="text-center text-ink-400 py-8">Nenhum registro financeiro encontrado no período selecionado.</td></tr>
+                <tr><td colspan="8" class="text-center text-ink-400 py-8">Nenhum registro financeiro encontrado no período selecionado.</td></tr>
             @endforelse
         </tbody>
     </table>

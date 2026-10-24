@@ -5,8 +5,15 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
 use App\Models\Categoria;
+use App\Models\Configuracao;
+use App\Models\Pagamento;
 use App\Services\AgendamentoService;
+use App\Http\Requests\AgendarRequest;
 use App\Services\AvaliacaoService;
+use App\Services\CadastroService;
+use Illuminate\Support\Facades\DB;
+use App\Services\PagamentoService;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -48,40 +55,46 @@ class ClienteController extends Controller
     /**
      * Figuras 10 a 13 - Agendamento do Cliente (assistente em 4 fases).
      */
-    public function agendar()
+    public function agendar(Request $request)
     {
+        // Todas as categorias ativas aparecem, mesmo sem serviço no momento;
+        // a tela avisa quando a categoria escolhida não tem serviço disponível.
         $categorias = Categoria::where('status', 'ativo')
-            ->with(['servicos' => function ($q) {
-                $q->where('status', 'ativo')
-                    ->whereHas('prestador', fn ($qq) => $qq->where('status', 'ativo'))
-                    ->with('prestador.prestadorProfile');
-            }])
+            ->with(['servicos' => fn ($q) => $q->contratavel()->with('prestador.prestadorProfile')])
             ->orderBy('nome_categoria')
-            ->get()
-            ->filter(fn ($categoria) => $categoria->servicos->isNotEmpty())
-            ->values();
+            ->get();
 
-        return view('cliente.agendar', compact('categorias'));
+        // Reputação de todos os prestadores da tela numa consulta só.
+        $prestadorIds = $categorias->pluck('servicos')->flatten()->pluck('prestador_id')->unique()->values()->all();
+
+        return view('cliente.agendar', [
+            'categorias' => $categorias,
+            'reputacoes' => AvaliacaoService::medias($prestadorIds),
+            'multa' => Configuracao::multaCancelamento(),
+            'enderecoCadastro' => $request->user()->enderecoPrincipal,
+        ]);
     }
 
-    public function agendarStore(Request $request)
+    public function agendarStore(AgendarRequest $request)
     {
-        $data = $request->validate([
-            'servico_id' => 'required|exists:servicos,id',
-            'data' => 'required|date|after_or_equal:today',
-            'hora' => 'required',
-            'endereco_servico' => 'required|string|max:255',
-        ]);
+        $data = $request->validated();
+        $cliente = $request->user();
 
         try {
-            $dataHora = Carbon::parse($data['data'].' '.$data['hora']);
+            // O endereço novo só fica salvo se o agendamento for criado.
+            DB::transaction(function () use ($data, $cliente) {
+                $enderecoId = $data['endereco_opcao'] === 'outro'
+                    // Reaproveita o endereço se o cliente já tiver digitado o mesmo antes.
+                    ? $cliente->enderecos()->firstOrCreate(CadastroService::camposEndereco($data))->id
+                    : (int) $data['endereco_id'];
 
-            AgendamentoService::criar(
-                $request->user()->id,
-                (int) $data['servico_id'],
-                $dataHora,
-                $data['endereco_servico'],
-            );
+                AgendamentoService::criar(
+                    $cliente->id,
+                    (int) $data['servico_id'],
+                    Carbon::createFromFormat('Y-m-d H:i', $data['data'].' '.$data['hora']),
+                    $enderecoId,
+                );
+            });
         } catch (ValidationException $e) {
             return back()->withErrors($e->errors())->withInput();
         }
@@ -95,11 +108,19 @@ class ClienteController extends Controller
      */
     public function historico(Request $request)
     {
-        $query = Agendamento::with(['servico.categoria', 'prestador.prestadorProfile', 'avaliacao'])
+        $query = Agendamento::with(['servico.categoria', 'prestador.prestadorProfile', 'avaliacao', 'cancelamento'])
             ->where('cliente_id', $request->user()->id);
 
         if ($request->filled('status') && $request->status !== 'todos') {
             $query->where('status', $request->status);
+        }
+
+        // Busca pelo nome do serviço ou do prestador.
+        if ($request->filled('busca')) {
+            $termo = '%'.addcslashes($request->string('busca')->trim(), '%_\\').'%';
+            $query->where(fn ($q) => $q
+                ->whereHas('servico', fn ($qq) => $qq->where('nome', 'like', $termo))
+                ->orWhereHas('prestador', fn ($qq) => $qq->where('name', 'like', $termo)));
         }
 
         $agendamentos = $query->latest('data_hora')->paginate(8)->withQueryString();
@@ -164,5 +185,36 @@ class ClienteController extends Controller
         }
 
         return back()->with('success', 'Avaliação registrada. Obrigado pelo feedback!');
+    }
+
+    /**
+     * RN4: tela de pagamento da multa de cancelamento.
+     */
+    public function pagarMulta(Request $request, Agendamento $agendamento)
+    {
+        if (!PagamentoService::multasPendentes($request->user()->id)->whereKey($agendamento->id)->exists()) {
+            return redirect()->route('cliente.historico')->with('error', 'Não há multa pendente para este agendamento.');
+        }
+
+        return view('cliente.pagar-multa', [
+            'agendamento' => $agendamento->load(['servico', 'prestador', 'cancelamento']),
+            'metodos' => Pagamento::METODOS,
+        ]);
+    }
+
+    public function pagarMultaStore(Request $request, Agendamento $agendamento, PagamentoService $pagamentos)
+    {
+        $data = $request->validate([
+            'metodo' => ['required', Rule::in(array_keys(Pagamento::METODOS))],
+        ], ['metodo.required' => 'Escolha a forma de pagamento.', 'metodo.in' => 'Forma de pagamento inválida.']);
+
+        try {
+            $pagamentos->pagarMulta($agendamento, $request->user()->id, $data['metodo']);
+        } catch (ValidationException $e) {
+            return back()->with('error', collect($e->errors())->collapse()->first());
+        }
+
+        return redirect()->route('cliente.historico')
+            ->with('success', 'Multa paga com sucesso! Você já pode fazer novos agendamentos.');
     }
 }

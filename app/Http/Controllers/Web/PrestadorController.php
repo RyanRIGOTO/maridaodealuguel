@@ -8,8 +8,12 @@ use App\Models\Categoria;
 use App\Models\Recebimento;
 use App\Models\Servico;
 use App\Services\AgendamentoService;
+use App\Services\AvaliacaoService;
 use App\Services\AuditLogService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PrestadorController extends Controller
@@ -21,17 +25,18 @@ class PrestadorController extends Controller
     {
         $user = $request->user();
 
-        $faturamentoMes = Recebimento::whereHas('agendamento', fn ($q) => $q->where('prestador_id', $user->id))
+        // Líquido = valor - taxa; a taxa sai do percentual gravado em cada recebimento (RN7).
+        $faturamentoMes = (float) Recebimento::whereHas('agendamento', fn ($q) => $q->doPrestador($user->id))
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->sum('valor_liquido_prestador');
+            ->sum(DB::raw(Recebimento::SQL_LIQUIDO));
 
-        $totalAgendamentos = Agendamento::where('prestador_id', $user->id)->count();
-        $servicosConcluidos = Agendamento::where('prestador_id', $user->id)->where('status', 'concluido')->count();
-        $avaliacaoMedia = optional($user->prestadorProfile)->reputacao_media ?? 5.00;
+        $totalAgendamentos = Agendamento::doPrestador($user->id)->count();
+        $servicosConcluidos = Agendamento::doPrestador($user->id)->where('status', 'concluido')->count();
+        $avaliacaoMedia = AvaliacaoService::media($user->id) ?? 5.00;
 
         $proximosAgendamentos = Agendamento::with(['cliente', 'servico'])
-            ->where('prestador_id', $user->id)
+            ->doPrestador($user->id)
             ->whereIn('status', ['pendente', 'confirmado'])
             ->orderBy('data_hora')
             ->take(5)
@@ -47,7 +52,7 @@ class PrestadorController extends Controller
      */
     public function agendamentos(Request $request)
     {
-        $query = Agendamento::with(['cliente', 'servico'])->where('prestador_id', $request->user()->id);
+        $query = Agendamento::with(['cliente', 'servico', 'endereco'])->doPrestador($request->user()->id);
 
         if ($request->filled('status') && $request->status !== 'todos') {
             $query->where('status', $request->status);
@@ -96,6 +101,30 @@ class PrestadorController extends Controller
     }
 
     /**
+     * Negociação de horário: envia ao cliente, pelo chat, uma proposta de nova data/hora.
+     */
+    public function proporHorario(Request $request, Agendamento $agendamento)
+    {
+        $data = $request->validate([
+            'data' => ['required', 'date_format:Y-m-d', 'after_or_equal:today'],
+            'hora' => ['required', 'date_format:H:i'],
+        ]);
+
+        try {
+            AgendamentoService::proporHorario(
+                $agendamento,
+                $request->user()->id,
+                Carbon::createFromFormat('Y-m-d H:i', $data['data'].' '.$data['hora']),
+            );
+        } catch (ValidationException $e) {
+            return back()->with('error', collect($e->errors())->collapse()->first());
+        }
+
+        return redirect()->route('chat.index', ['agendamento' => $agendamento->id])
+            ->with('success', 'Proposta enviada ao cliente. O horário muda quando ele aceitar.');
+    }
+
+    /**
      * Figuras 18 e 19 - Meus Serviços / Cadastro de Serviço (Prestador).
      */
     public function servicos(Request $request)
@@ -113,7 +142,7 @@ class PrestadorController extends Controller
     public function servicosStore(Request $request)
     {
         $data = $request->validate([
-            'categoria_id' => 'required|exists:categorias,id',
+            'categoria_id' => ['required', Rule::exists('categorias', 'id')->where('status', 'ativo')],
             'nome' => 'required|string|max:100',
             'descricao' => 'required|string|max:2000',
             'preco_sugerido' => 'required|numeric|min:0|max:99999.99',
@@ -137,7 +166,7 @@ class PrestadorController extends Controller
         }
 
         $data = $request->validate([
-            'categoria_id' => 'required|exists:categorias,id',
+            'categoria_id' => ['required', Rule::exists('categorias', 'id')->where('status', 'ativo')],
             'nome' => 'required|string|max:100',
             'descricao' => 'required|string|max:2000',
             'preco_sugerido' => 'required|numeric|min:0|max:99999.99',
@@ -156,6 +185,11 @@ class PrestadorController extends Controller
             abort(403);
         }
 
+        // Excluir apagaria em cascata os agendamentos, recebimentos e avaliações do serviço.
+        if ($servico->agendamentos()->exists()) {
+            return back()->with('error', 'Este serviço já possui agendamentos. Inative-o em vez de excluir, para preservar o histórico.');
+        }
+
         AuditLogService::log('servico_removido', 'servicos', $servico->id);
         $servico->delete();
 
@@ -167,8 +201,8 @@ class PrestadorController extends Controller
      */
     public function historico(Request $request)
     {
-        $query = Agendamento::with(['cliente', 'servico', 'avaliacao'])
-            ->where('prestador_id', $request->user()->id)
+        $query = Agendamento::with(['cliente', 'servico', 'avaliacao', 'pagamentos', 'cancelamento'])
+            ->doPrestador($request->user()->id)
             ->whereIn('status', ['concluido', 'cancelado']);
 
         if ($request->filled('status') && $request->status !== 'todos') {
@@ -192,8 +226,8 @@ class PrestadorController extends Controller
         ]);
         $prestadorId = $request->user()->id;
 
-        $agendamentosQuery = Agendamento::with(['servico', 'avaliacao', 'recebimento'])
-            ->where('prestador_id', $prestadorId);
+        $agendamentosQuery = Agendamento::with(['servico', 'avaliacao', 'recebimentos'])
+            ->doPrestador($prestadorId);
 
         if (!empty($periodo['data_inicio'])) {
             $agendamentosQuery->whereDate('data_hora', '>=', $periodo['data_inicio']);
@@ -210,7 +244,8 @@ class PrestadorController extends Controller
 
         $porServico = $servicos->map(function (Servico $servico) use ($agendamentos) {
             $atendimentos = $agendamentos->where('servico_id', $servico->id);
-            $recebimentos = $atendimentos->pluck('recebimento')->filter();
+            // Inclui o pagamento do serviço e as multas de cancelamento tardio (RN4).
+            $recebimentos = $atendimentos->pluck('recebimentos')->flatten();
             $avaliacoes = $atendimentos->pluck('avaliacao')
                 ->filter(fn ($avaliacao) => $avaliacao && !$avaliacao->moderada);
 

@@ -8,17 +8,16 @@ use App\Models\Servico;
 use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ServicoController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Servico::with(['categoria', 'prestador.prestadorProfile'])
-            ->where('status', 'ativo')
-            ->whereHas('prestador', fn($q) => $q->where('status', 'ativo'));
+        $query = Servico::with(['categoria', 'prestador.prestadorProfile'])->contratavel();
 
         if ($request->filled('categoria_id')) {
-            $query->where('categoria_id', $request->categoria_id);
+            $query->where('categoria_id', $request->integer('categoria_id'));
         }
 
         if ($request->filled('search')) {
@@ -29,7 +28,7 @@ class ServicoController extends Controller
             });
         }
 
-        $servicos = $query->latest()->paginate($request->per_page ?? 12);
+        $servicos = $query->latest()->paginate($this->porPagina($request, 12));
 
         return response()->json([
             'success' => true,
@@ -53,7 +52,7 @@ class ServicoController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'categoria_id' => 'required|exists:categorias,id',
+            'categoria_id' => ['required', Rule::exists('categorias', 'id')->where('status', 'ativo')],
             'nome' => 'required|string|max:100',
             'descricao' => 'required|string|max:2000',
             'preco_sugerido' => 'required|numeric|min:0|max:99999.99',
@@ -84,7 +83,7 @@ class ServicoController extends Controller
         }
 
         $data = $request->validate([
-            'categoria_id' => 'required|exists:categorias,id',
+            'categoria_id' => ['required', Rule::exists('categorias', 'id')->where('status', 'ativo')],
             'nome' => 'required|string|max:100',
             'descricao' => 'required|string|max:2000',
             'preco_sugerido' => 'required|numeric|min:0|max:99999.99',
@@ -101,13 +100,21 @@ class ServicoController extends Controller
         ]);
     }
 
-    public function destroy(Servico $servico): JsonResponse
+    public function destroy(Request $request, Servico $servico): JsonResponse
     {
-        if ($servico->prestador_id !== request()->user()->id) {
+        if ($servico->prestador_id !== $request->user()->id) {
             return response()->json([
                 'success' => false,
                 'error' => ['code' => 'FORBIDDEN', 'message' => 'Você não pode excluir este serviço.'],
             ], 403);
+        }
+
+        // Excluir apagaria em cascata os agendamentos, recebimentos e avaliações do serviço.
+        if ($servico->agendamentos()->exists()) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'CONFLICT', 'message' => 'Serviço com agendamentos. Inative-o em vez de excluir.'],
+            ], 409);
         }
 
         AuditLogService::log('servico_removido', 'servicos', $servico->id);

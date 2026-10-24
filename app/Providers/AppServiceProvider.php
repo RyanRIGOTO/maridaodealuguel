@@ -11,7 +11,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Meio de pagamento: troque PagamentoSimulado pela classe do gateway real.
+        $this->app->bind(\App\Pagamentos\GatewayPagamento::class, \App\Pagamentos\PagamentoSimulado::class);
     }
 
     /**

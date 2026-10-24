@@ -67,7 +67,7 @@
                         <p class="font-bold text-ink-900 text-base">{{ $agendamento->servico->nome ?? 'Serviço prestado' }}</p>
                         <p class="text-xs text-ink-600 mt-0.5 flex items-center gap-1.5">
                             <i class="ti ti-user text-xs"></i>
-                            <span>Profissional: <strong>{{ $agendamento->prestador->name }}</strong> · Avaliado em {{ optional($agendamento->avaliacao)->data_avaliacao?->format('d/m/Y') }}</span>
+                            <span>Profissional: <strong>{{ $agendamento->prestador->name }}</strong> · Avaliado em {{ $agendamento->avaliacao?->created_at?->format('d/m/Y') }}</span>
                         </p>
                         @if ($agendamento->avaliacao?->comentario)
                             <div class="mt-2.5 p-3 rounded-lg bg-ink-50 border border-ink-200 text-xs sm:text-sm text-ink-800 italic">

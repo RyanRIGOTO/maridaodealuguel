@@ -20,7 +20,7 @@
                 </div>
                 <div>
                     <p class="font-bold text-ink-900 text-base group-hover:text-brand-600 transition-colors">Movimentações Financeiras</p>
-                    <p class="text-xs sm:text-sm text-ink-600 mt-1 leading-relaxed">Faturamento bruto da plataforma, comissão de 10% e repasse líquido para prestadores.</p>
+                    <p class="text-xs sm:text-sm text-ink-600 mt-1 leading-relaxed">Faturamento bruto da plataforma, comissão (taxa atual de {{ number_format($taxa, 2, ',', '.') }}%) e repasse líquido para prestadores.</p>
                 </div>
             </div>
         </a>

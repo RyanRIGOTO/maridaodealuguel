@@ -7,9 +7,9 @@ use App\Http\Resources\AvaliacaoResource;
 use App\Http\Resources\ServicoResource;
 use App\Http\Resources\UserResource;
 use App\Models\Avaliacao;
-use App\Models\Categoria;
 use App\Models\Servico;
 use App\Models\User;
+use App\Services\AvaliacaoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,6 +23,7 @@ class PublicoController extends Controller
     {
         $query = User::where('role', 'prestador')
             ->where('status', 'ativo')
+            ->whereDoesntHave('prestadorProfile', fn($q) => $q->where('em_revisao', true))
             ->with(['prestadorProfile', 'servicos' => fn($q) => $q->where('status', 'ativo')]);
 
         if ($request->filled('categoria_id')) {
@@ -37,7 +38,7 @@ class PublicoController extends Controller
             $query->where('name', 'like', "%{$request->search}%");
         }
 
-        $prestadores = $query->latest()->paginate($request->per_page ?? 12);
+        $prestadores = $query->latest()->paginate($this->porPagina($request, 12));
 
         return response()->json([
             'success' => true,
@@ -60,17 +61,15 @@ class PublicoController extends Controller
         $user->load(['prestadorProfile', 'servicos' => fn($q) => $q->where('status', 'ativo')->with('categoria')]);
 
         $avaliacoes = Avaliacao::with('cliente')
-            ->where('prestador_id', $user->id)
+            ->doPrestador($user->id)
             ->where('moderada', false)
-            ->latest('data_avaliacao')
+            ->latest()
             ->limit(10)
             ->get();
 
-        $mediaNotas = Avaliacao::where('prestador_id', $user->id)
-            ->where('moderada', false)
-            ->avg('nota');
+        $mediaNotas = AvaliacaoService::media($user->id);
 
-        $totalAvaliacoes = Avaliacao::where('prestador_id', $user->id)
+        $totalAvaliacoes = Avaliacao::doPrestador($user->id)
             ->where('moderada', false)
             ->count();
 
@@ -93,7 +92,7 @@ class PublicoController extends Controller
      */
     public function servicosPorPrestador(User $user): JsonResponse
     {
-        if (!$user->isPrestador()) {
+        if (!$user->isPrestador() || !$user->isActive()) {
             return response()->json([
                 'success' => false,
                 'error' => ['code' => 'NOT_FOUND', 'message' => 'Prestador não encontrado.'],
@@ -119,6 +118,14 @@ class PublicoController extends Controller
     {
         $servico->load(['categoria', 'prestador.prestadorProfile']);
 
+        // Serviço inativo, de categoria inativa ou de prestador inativo não é público.
+        if ($servico->status !== 'ativo' || $servico->categoria?->status !== 'ativo' || !$servico->prestador?->isActive()) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'NOT_FOUND', 'message' => 'Serviço não encontrado.'],
+            ], 404);
+        }
+
         return response()->json([
             'success' => true,
             'data' => new ServicoResource($servico),
@@ -131,19 +138,19 @@ class PublicoController extends Controller
      */
     public function avaliacoesPublicas(Request $request): JsonResponse
     {
-        $query = Avaliacao::with(['cliente', 'prestador', 'agendamento.servico'])
+        $query = Avaliacao::with(['cliente', 'agendamento.servico.prestador'])
             ->where('moderada', false)
             ->whereHas('agendamento', fn($q) => $q->where('status', 'concluido'));
 
         if ($request->filled('prestador_id')) {
-            $query->where('prestador_id', $request->prestador_id);
+            $query->doPrestador($request->integer('prestador_id'));
         }
 
         if ($request->filled('nota_min')) {
             $query->where('nota', '>=', $request->nota_min);
         }
 
-        $avaliacoes = $query->latest('data_avaliacao')->paginate($request->per_page ?? 20);
+        $avaliacoes = $query->latest()->paginate($this->porPagina($request, 20));
 
         return response()->json([
             'success' => true,
